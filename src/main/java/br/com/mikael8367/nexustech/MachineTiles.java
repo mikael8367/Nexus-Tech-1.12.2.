@@ -20,7 +20,7 @@ import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.oredict.OreDictionary;
 
 final class TileCoalGenerator extends AbstractEnergyTile implements ITickable {
-    private static final int MAX_FUEL_TICKS = 32000;
+    static final int MAX_FUEL_TICKS = 32000;
     private int fuelTicks;
     TileCoalGenerator() { super(32000, 0, 40); }
     int getFuelTicks() { return fuelTicks; }
@@ -56,7 +56,7 @@ final class TileSolarPanel extends AbstractEnergyTile implements ITickable {
     TileSolarPanel() { super(2000, 0, 20); }
     @Override public void update() {
         if (world == null || world.isRemote) return;
-        if (world.provider.hasSkyLight() && world.isDaytime() && !world.isRaining()
+        if (world.provider.hasSkyLight() && world.isDaytime() && !world.isRaining() && !world.isThundering()
                 && world.canSeeSky(pos.up()) && energy.getCapacity() - energy.getEnergyStored() >= 4) {
             energy.addInternal(4);
         }
@@ -330,7 +330,7 @@ final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
     private boolean structureComplete;
     private boolean controllerTile;
     private BlockPos controllerOrigin;
-    private long lastStructureCheck = Long.MIN_VALUE;
+    private long lastStructureCheck;
 
     TileDigitalMine() { super(100000, 512, 0); }
 
@@ -441,7 +441,7 @@ final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
      */
     private void refreshStructure() {
         long now = world.getTotalWorldTime();
-        if (controllerOrigin == null || now - lastStructureCheck >= STRUCTURE_CHECK_INTERVAL) {
+        if (now - lastStructureCheck >= STRUCTURE_CHECK_INTERVAL) {
             lastStructureCheck = now;
             BlockPos best = null;
             for (int ox = 0; ox < MineMath.STRUCT_WIDTH; ox++) {
