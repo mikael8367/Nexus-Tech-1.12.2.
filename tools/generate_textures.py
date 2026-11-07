@@ -32,9 +32,7 @@ def png_bytes(pixels, size, color_type):
         for p in row:
             raw.extend(bytes(p))
     ihdr = struct.pack('>IIBBBBB', size, size, 8, color_type, 0, 0, 0)
-    return (b'PNG
-
-' + chunk(b'IHDR', ihdr) +
+    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr) +
             chunk(b'IDAT', zlib.compress(bytes(raw), 9)) + chunk(b'IEND', b''))
 
 
