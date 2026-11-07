@@ -38,7 +38,26 @@ jobs:
           echo "$RUNNER_TEMP/gradle-4.9/bin" >> "$GITHUB_PATH"
 
       - name: Build with Gradle
-        run: gradle build --no-daemon
+        run: |
+          set -o pipefail
+          gradle build --no-daemon --stacktrace 2>&1 | tee gradle-build.log
+
+      - name: Report failure log to issue
+        if: failure()
+        run: |
+          {
+            echo "**Build falhou** - run ${{ github.run_number }} (commit ${{ github.sha }})"
+            echo ""
+            echo "```"
+            tail -n 120 gradle-build.log
+            echo "```"
+          } > /tmp/failure.md
+          BODY="$(jq -Rs . /tmp/failure.md)"
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -d "{\"body\": $BODY}" \
+            "https://api.github.com/repos/mikael8367/Nexus-Tech-1.12.2/issues/4/comments" || echo "falha ao reportar"
 
       - name: Upload Build Artifact
         if: success()
