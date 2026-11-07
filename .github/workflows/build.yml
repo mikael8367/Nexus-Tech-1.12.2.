@@ -2,46 +2,59 @@ name: Build Nexus Tech
 
 on:
   push:
-      branches:
-            - main
-                  - master
-                    workflow_dispatch:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
 
-                    jobs:
-                      build:
-                          runs-on: ubuntu-latest
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-                              steps:
-                                    - name: Checkout Repository
-                                            uses: actions/checkout@v4
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-                                                  - name: Set up JDK 8
-                                                          uses: actions/setup-java@v4
-                                                                  with:
-                                                                            java-version: '8'
-                                                                                      distribution: 'temurin'
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
 
-                                                                                            - name: Make Gradle Wrapper Executable
-                                                                                                    run: chmod +x gradlew
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-1122-fg23-${{ runner.os }}
+          restore-keys: |
+            gradle-1122-fg23-
 
-                                                                                                          - name: Build with Gradle
-                                                                                                                  run: ./gradlew build --no-daemon
+      - name: Install Gradle 4.9
+        run: |
+          curl -fsSL -o gradle-4.9-bin.zip https://services.gradle.org/distributions/gradle-4.9-bin.zip
+          unzip -q gradle-4.9-bin.zip -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-4.9/bin" >> "$GITHUB_PATH"
 
-                                                                                                                        - name: Upload Build Artifact
-                                                                                                                                if: success()
-                                                                                                                                        uses: actions/upload-artifact@v4
-                                                                                                                                                with:
-                                                                                                                                                          name: Nexus-Tech-Mod-JAR
-                                                                                                                                                                    path: build/libs/*.jar
-                                                                                                                                                                              retention-days: 30
+      - name: Build with Gradle
+        run: gradle build --no-daemon
 
-                                                                                                                                                                                    - name: Create GitHub Release
-                                                                                                                                                                                            if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-                                                                                                                                                                                                    uses: softprops/action-gh-release@v1
-                                                                                                                                                                                                            with:
-                                                                                                                                                                                                                      tag_name: v${{ github.run_number }}
-                                                                                                                                                                                                                                name: "Nexus Tech Build #${{ github.run_number }}"
-                                                                                                                                                                                                                                          body: "Build automatico gerado pelo GitHub Actions."
-                                                                                                                                                                                                                                                    files: build/libs/*.jar
-                                                                                                                                                                                                                                                            env:
-                                                                                                                                                                                                                                                                      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Build Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nexus-Tech-Mod-JAR
+          path: build/libs/*.jar
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: nexus-tech-build-${{ github.run_number }}
+          name: "Nexus Tech 1.12.2 - Build ${{ github.run_number }}"
+          body: "Build automatico gerado pelo GitHub Actions (ForgeGradle 2.3 + Gradle 4.9)."
+          files: build/libs/*.jar
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
