@@ -11,7 +11,7 @@ public final class TechMachineScreen extends GuiScreen {
     private final TileEntity tile;
     private final String title;
     private final int panelWidth = 190;
-    private final int panelHeight = 118;
+    private final int defaultPanelHeight = 118;
 
     public TechMachineScreen(TileEntity tile, String title) {
         this.tile = tile;
@@ -20,6 +20,7 @@ public final class TechMachineScreen extends GuiScreen {
 
     @Override public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
+        int panelHeight = tile instanceof TileDigitalMine ? 148 : defaultPanelHeight;
         int left = (width - panelWidth) / 2;
         int top = (height - panelHeight) / 2;
         drawRect(left, top, left + panelWidth, top + panelHeight, 0xEE101820);
@@ -61,18 +62,28 @@ public final class TechMachineScreen extends GuiScreen {
             drawString(fontRenderer, "Agache e clique para retirar o item.", left + 12, y, 0xAABBC8);
         } else if (tile instanceof TileDigitalMine) {
             TileDigitalMine mine = (TileDigitalMine) tile;
-            String status = mine.isOutputFull() ? "Saída cheia: retire os itens para continuar"
-                    : mine.isFinished() ? "Escavação concluída (3x2x3)"
-                    : "Progresso: " + mine.getProgress() + " / " + TileDigitalMine.mineVolume() + " (3x2x3)";
-            drawString(fontRenderer, status, left + 12, y, 0xE5E5E5);
-            y += 15;
-            List<String> filterNames = mine.getFilterNames();
-            List<String> shown = filterNames.size() > 3 ? filterNames.subList(0, 3) : filterNames;
-            String filter = filterNames.isEmpty() ? "Filtro: vazio (qualquer minério)"
-                    : "Filtro: " + String.join(", ", shown)
-                    + (filterNames.size() > 3 ? " +" + (filterNames.size() - 3) : "");
-            drawString(fontRenderer, filter, left + 12, y, 0xAABBC8);
-            y += 15;
+            if (!mine.isStructureComplete()) {
+                drawString(fontRenderer, "Estrutura incompleta: monte 3x2x3 deste bloco.", left + 12, y, 0xFFAA55);
+                y += 15;
+            } else if (!mine.isController()) {
+                drawString(fontRenderer, "Parte da estrutura da Mina Digital (3x2x3).", left + 12, y, 0xAABBC8);
+                y += 15;
+            } else {
+                String status = mine.isOutputFull() ? "Saída cheia: retire os itens para continuar"
+                        : mine.isFinished() ? "Escavação concluída"
+                        : "Progresso: " + mine.getProgress() + " / " + TileDigitalMine.mineVolume();
+                drawString(fontRenderer, status, left + 12, y, 0xE5E5E5);
+                y += 15;
+                drawString(fontRenderer, "Área: 64x128x64 abaixo da estrutura", left + 12, y, 0xE5E5E5);
+                y += 15;
+                List<String> filterNames = mine.getFilterNames();
+                List<String> shown = filterNames.size() > 3 ? filterNames.subList(0, 3) : filterNames;
+                String filter = filterNames.isEmpty() ? "Filtro: vazio (qualquer minério)"
+                        : "Filtro: " + String.join(", ", shown)
+                        + (filterNames.size() > 3 ? " +" + (filterNames.size() - 3) : "");
+                drawString(fontRenderer, filter, left + 12, y, 0xAABBC8);
+                y += 15;
+            }
             drawString(fontRenderer, "Clique com um minério/item na mão para filtrar.", left + 12, y, 0xAABBC8);
             y += 15;
             drawString(fontRenderer, "Mão vazia agachando: retirar itens ou limpar filtro.", left + 12, y, 0xAABBC8);

@@ -152,17 +152,21 @@ final class BlockDigitalMine extends BlockTechMachine {
         if (!(tile instanceof TileDigitalMine)) return false;
         if (world.isRemote) return true;
         TileDigitalMine mine = (TileDigitalMine) tile;
+        // Any block of the assembled 3x2x3 structure acts on its controller.
+        TileDigitalMine controller = mine.isController() ? mine : mine.findController();
+        TileDigitalMine actor = controller != null ? controller : mine;
         ItemStack held = player.getHeldItem(hand);
         if (!held.isEmpty()) {
             // Registers the held item as a filter entry; the item is never consumed.
-            mine.addToFilter(held);
+            actor.addToFilter(held);
             return true;
         }
         if (player.isSneaking()) {
-            if (mine.takeOutput(player)) return true;
-            return mine.clearFilter();
+            if (actor.takeOutput(player)) return true;
+            return actor.clearFilter();
         }
-        return openMachineGui(world, pos, player, TechGuiHandler.GUI_DIGITAL_MINE);
+        BlockPos guiPos = controller != null ? controller.getPos() : pos;
+        return openMachineGui(world, guiPos, player, TechGuiHandler.GUI_DIGITAL_MINE);
     }
     @Override public void breakBlock(World world, BlockPos pos, IBlockState state) {
         TileEntity tile = world.getTileEntity(pos);

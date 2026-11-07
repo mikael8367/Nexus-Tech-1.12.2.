@@ -266,23 +266,34 @@ final class TileElectricAnvil extends AbstractEnergyTile implements ITickable {
 }
 
 /**
- * Pure geometry and arithmetic for the Digital Mine. Keeps the 3x2x3 contract
- * in one place and stays unit-testable without a Minecraft runtime.
+ * Pure geometry and arithmetic for the Digital Mine. Keeps the multiblock
+ * structure and excavation contracts in one place and stays unit-testable
+ * without a Minecraft runtime.
  */
 final class MineMath {
-    static final int MINE_WIDTH = 3;
-    static final int MINE_HEIGHT = 2;
-    static final int MINE_DEPTH = 3;
-    static final int VOLUME = MINE_WIDTH * MINE_HEIGHT * MINE_DEPTH;
+    /** Physical structure the player assembles: 3x2x3 Digital Mine blocks. */
+    static final int STRUCT_WIDTH = 3;
+    static final int STRUCT_HEIGHT = 2;
+    static final int STRUCT_DEPTH = 3;
+    static final int STRUCT_VOLUME = STRUCT_WIDTH * STRUCT_HEIGHT * STRUCT_DEPTH;
+    /** Excavation volume below the assembled structure. */
+    static final int AREA_WIDTH = 64;
+    static final int AREA_HEIGHT = 128;
+    static final int AREA_DEPTH = 64;
+    static final int VOLUME = AREA_WIDTH * AREA_HEIGHT * AREA_DEPTH;
     private MineMath() { }
-    /** Scan index to {dx, dy, dz} offsets relative to the machine; the layer just below it comes first. */
+    /**
+     * Scan index to {dx, dy, dz} offsets relative to the structure center at its
+     * bottom layer. Layers are excavated top first, one 64x64 layer at a time.
+     */
     static int[] offsets(int index) {
         if (index < 0 || index >= VOLUME) throw new IndexOutOfBoundsException("Scan index out of range: " + index);
-        int layerSize = MINE_WIDTH * MINE_DEPTH;
-        int dy = -(index / layerSize) - 1;
+        int layerSize = AREA_WIDTH * AREA_DEPTH;
+        int layer = index / layerSize;
         int rest = index % layerSize;
-        int dz = rest / MINE_WIDTH - 1;
-        int dx = rest % MINE_WIDTH - 1;
+        int dx = rest / AREA_DEPTH - AREA_WIDTH / 2;
+        int dz = rest % AREA_DEPTH - AREA_DEPTH / 2;
+        int dy = -1 - layer;
         return new int[] {dx, dy, dz};
     }
     static int clampCursor(int stored) { return Math.max(0, Math.min(VOLUME, stored)); }
@@ -296,6 +307,9 @@ final class MineMath {
 final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
     private static final int ENERGY_PER_BLOCK = 50;
     private static final int FILTER_LIMIT = 6;
+    private static final int SCAN_PER_TICK = 2048;
+    private static final int MAX_MINE_PER_TICK = 16;
+    private static final long STRUCTURE_CHECK_INTERVAL = 20L;
     private final ItemStackHandler filter = new ItemStackHandler(FILTER_LIMIT) {
         @Override protected void onContentsChanged(int slot) { markDirty(); }
     };
@@ -313,13 +327,29 @@ final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
     };
     private int cursor;
     private boolean outputFull;
+    private boolean structureComplete;
+    private boolean controllerTile;
+    private BlockPos controllerOrigin;
+    private long lastStructureCheck = Long.MIN_VALUE;
 
-    TileDigitalMine() { super(20000, 512, 0); }
+    TileDigitalMine() { super(100000, 512, 0); }
 
     static int mineVolume() { return MineMath.VOLUME; }
     int getProgress() { return MineMath.clampCursor(cursor); }
     boolean isFinished() { return MineMath.clampCursor(cursor) >= MineMath.VOLUME; }
     boolean isOutputFull() { return outputFull; }
+    boolean isStructureComplete() { return structureComplete; }
+    boolean isController() { return controllerTile; }
+
+    /** The elected controller of the assembled 3x2x3 structure, or null when absent. */
+    TileDigitalMine findController() {
+        if (world == null || world.isRemote || controllerOrigin == null) return null;
+        TileEntity tile = world.getTileEntity(controllerOrigin);
+        return tile instanceof TileDigitalMine ? (TileDigitalMine) tile : null;
+    }
+
+    void receiveInternal(int amount) { if (amount > 0) energy.addInternal(amount); }
+
     int getFilterCount() {
         int count = 0;
         for (int i = 0; i < filter.getSlots(); i++) if (!filter.getStackInSlot(i).isEmpty()) count++;
@@ -403,7 +433,45 @@ final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
         return false;
     }
 
+    /**
+     * Elects the controller deterministically: among every complete 3x2x3 box of
+     * Digital Mine blocks that contains this block, the one with the lowest
+     * corner wins, and its corner block is the controller. Every tile of the
+     * structure computes the same winner, so exactly one tile mines.
+     */
+    private void refreshStructure() {
+        long now = world.getTotalWorldTime();
+        if (controllerOrigin == null || now - lastStructureCheck >= STRUCTURE_CHECK_INTERVAL) {
+            lastStructureCheck = now;
+            BlockPos best = null;
+            for (int ox = 0; ox < MineMath.STRUCT_WIDTH; ox++) {
+                for (int oy = 0; oy < MineMath.STRUCT_HEIGHT; oy++) {
+                    for (int oz = 0; oz < MineMath.STRUCT_DEPTH; oz++) {
+                        BlockPos origin = pos.add(-ox, -oy, -oz);
+                        if (!isCompleteStructure(origin)) continue;
+                        if (best == null || origin.compareTo(best) < 0) best = origin;
+                    }
+                }
+            }
+            controllerOrigin = best;
+            structureComplete = best != null;
+            controllerTile = best != null && best.equals(pos);
+        }
+    }
+
+    private boolean isCompleteStructure(BlockPos origin) {
+        for (int dx = 0; dx < MineMath.STRUCT_WIDTH; dx++) {
+            for (int dy = 0; dy < MineMath.STRUCT_HEIGHT; dy++) {
+                for (int dz = 0; dz < MineMath.STRUCT_DEPTH; dz++) {
+                    if (world.getBlockState(origin.add(dx, dy, dz)).getBlock() != TechRegistry.DIGITAL_MINE) return false;
+                }
+            }
+        }
+        return true;
+    }
+
     private boolean isTargetBlock(IBlockState state, BlockPos target) {
+        if (!world.isBlockLoaded(target)) return false; // never force-load or blind-mine chunks
         if (state.getBlock() == Blocks.BEDROCK) return false;
         if (world.getTileEntity(target) != null) return false; // never break container or technical blocks
         Item item = Item.getItemFromBlock(state.getBlock());
@@ -432,41 +500,62 @@ final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
         }
     }
 
-    @Override public void update() {
-        if (world == null || world.isRemote) return;
-        EnergyTransfer.pull(this, energy, 512);
+    /** Scans up to SCAN_PER_TICK positions and mines up to MAX_MINE_PER_TICK targets per tick. */
+    private boolean mineTick() {
+        BlockPos base = controllerOrigin.add(MineMath.STRUCT_WIDTH / 2, 0, MineMath.STRUCT_DEPTH / 2);
         boolean changed = false;
-        if (!isFinished() && energy.getEnergyStored() >= ENERGY_PER_BLOCK) {
+        int scanned = 0;
+        int mined = 0;
+        while (mined < MAX_MINE_PER_TICK && scanned < SCAN_PER_TICK
+                && cursor < MineMath.VOLUME && energy.getEnergyStored() >= ENERGY_PER_BLOCK) {
             BlockPos target = null;
             IBlockState targetState = null;
-            while (cursor < MineMath.VOLUME) {
+            while (cursor < MineMath.VOLUME && scanned < SCAN_PER_TICK) {
                 int[] offset = MineMath.offsets(cursor);
                 cursor++;
-                BlockPos candidate = pos.add(offset[0], offset[1], offset[2]);
+                scanned++;
+                BlockPos candidate = base.add(offset[0], offset[1], offset[2]);
                 IBlockState state = world.getBlockState(candidate);
                 if (isTargetBlock(state, candidate)) { target = candidate; targetState = state; break; }
             }
-            if (target != null) {
-                List<ItemStack> drops = targetState.getBlock().getDrops(world, target, targetState, 0);
-                boolean fits = true;
-                for (ItemStack drop : drops) {
-                    if (drop == null || drop.isEmpty() || !canFitDrop(drop)) { fits = false; break; }
-                }
-                if (fits) {
-                    for (ItemStack drop : drops) if (drop != null && !drop.isEmpty()) insertInternal(drop);
-                    world.setBlockToAir(target);
-                    energy.spendInternal(ENERGY_PER_BLOCK);
-                    outputFull = false;
-                    changed = true;
-                } else {
-                    cursor = MineMath.clampCursor(cursor - 1); // wait for room instead of losing drops
-                    outputFull = true;
-                }
-            } else {
+            if (target == null) break;
+            List<ItemStack> drops = targetState.getBlock().getDrops(world, target, targetState, 0);
+            boolean fits = true;
+            for (ItemStack drop : drops) {
+                if (drop == null || drop.isEmpty() || !canFitDrop(drop)) { fits = false; break; }
+            }
+            if (fits) {
+                for (ItemStack drop : drops) if (drop != null && !drop.isEmpty()) insertInternal(drop);
+                world.setBlockToAir(target);
+                energy.spendInternal(ENERGY_PER_BLOCK);
                 outputFull = false;
                 changed = true;
+                mined++;
+            } else {
+                cursor = MineMath.clampCursor(cursor - 1); // wait for room instead of losing drops
+                outputFull = true;
+                break;
             }
         }
+        return changed;
+    }
+
+    @Override public void update() {
+        if (world == null || world.isRemote) return;
+        refreshStructure();
+        if (!controllerTile) {
+            // Energy a cable pushed into a non-controller block before validation
+            // is forwarded to the controller so nothing is stranded.
+            if (structureComplete && energy.getEnergyStored() > 0) {
+                TileDigitalMine controller = findController();
+                if (controller != null) {
+                    controller.receiveInternal(energy.spendInternal(energy.getEnergyStored()));
+                }
+            }
+            return;
+        }
+        EnergyTransfer.pull(this, energy, 512);
+        boolean changed = !isFinished() && energy.getEnergyStored() >= ENERGY_PER_BLOCK && mineTick();
         if (changed || world.getTotalWorldTime() % 10L == 0L) { markDirty(); syncClient(); }
     }
 
@@ -483,11 +572,16 @@ final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
     }
 
     @Override public boolean hasCapability(net.minecraftforge.common.capabilities.Capability<?> cap, net.minecraft.util.EnumFacing side) {
-        return cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY || super.hasCapability(cap, side);
+        // Only the controller of the assembled 3x2x3 structure is a network member.
+        if (cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY || cap == net.minecraftforge.energy.CapabilityEnergy.ENERGY) {
+            return controllerTile && super.hasCapability(cap, side);
+        }
+        return super.hasCapability(cap, side);
     }
     @Override @SuppressWarnings("unchecked")
     public <T> T getCapability(net.minecraftforge.common.capabilities.Capability<T> cap, net.minecraft.util.EnumFacing side) {
-        return cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY ? (T) outputView : super.getCapability(cap, side);
+        if (cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY && controllerTile) return (T) outputView;
+        return super.getCapability(cap, side);
     }
 
     @Override public NBTTagCompound writeToNBT(NBTTagCompound tag) {
@@ -495,6 +589,8 @@ final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
         tag.setTag("Inventory", inventory.serializeNBT());
         tag.setInteger("MineCursor", cursor);
         tag.setBoolean("MineOutputFull", outputFull);
+        tag.setBoolean("MineStruct", structureComplete);
+        tag.setBoolean("MineCtrl", controllerTile);
         return super.writeToNBT(tag);
     }
     @Override public void readFromNBT(NBTTagCompound tag) {
@@ -503,5 +599,7 @@ final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
         if (tag.hasKey("Inventory")) inventory.deserializeNBT(tag.getCompoundTag("Inventory"));
         cursor = MineMath.clampCursor(tag.getInteger("MineCursor"));
         outputFull = tag.getBoolean("MineOutputFull");
+        structureComplete = tag.getBoolean("MineStruct");
+        controllerTile = tag.getBoolean("MineCtrl");
     }
 }
