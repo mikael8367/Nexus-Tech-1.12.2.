@@ -58,7 +58,11 @@ jobs:
             command -v gradle || echo "(gradle ausente do PATH)"
             java -version 2>&1 || true
             echo "--- fim do log do gradle ---"
-            tail -n 120 gradle-build.log 2>/dev/null || echo "(sem log do gradle)"
+            tail -n 250 gradle-build.log 2>/dev/null || echo "(sem log do gradle)"
+            echo "--- erros javac ---"
+            grep -n "error:" gradle-build.log | head -n 40 || true
+            echo "--- what went wrong ---"
+            grep -A 12 "What went wrong" gradle-build.log | head -n 30 || true
             printf '%s\n' "$FENCE"
           } > /tmp/failure.md
           BODY="$(jq -Rs . /tmp/failure.md)"
