@@ -34,6 +34,17 @@ final class EnergyBuffer implements IEnergyStorage {
         energy += accepted;
         return accepted;
     }
+    /**
+     * Internal machine consumption. Unlike extractEnergy, this is not limited by
+     * maxExtract: machines such as the electric furnace and anvil keep maxExtract = 0
+     * so external cables cannot drain them, but still need to spend stored FE to work.
+     */
+    int spendInternal(int amount) {
+        if (amount <= 0) return 0;
+        int spent = Math.min(energy, amount);
+        energy -= spent;
+        return spent;
+    }
     void setEnergyStored(int amount) { energy = Math.max(0, Math.min(capacity, amount)); }
     int getCapacity() { return capacity; }
     @Override public int getEnergyStored() { return energy; }
