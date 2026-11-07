@@ -27,6 +27,17 @@ public class EnergyBufferTest {
         assertFalse(buffer.canReceive());
         assertTrue(buffer.canExtract());
     }
+    @Test public void internalSpendBypassesExternalExtractLimit() {
+        EnergyBuffer buffer = new EnergyBuffer(100, 10, 0);
+        buffer.addInternal(50);
+        assertEquals(0, buffer.extractEnergy(10, false));
+        assertEquals(50, buffer.getEnergyStored());
+        assertEquals(10, buffer.spendInternal(10));
+        assertEquals(40, buffer.getEnergyStored());
+        assertEquals(40, buffer.spendInternal(100));
+        assertEquals(0, buffer.getEnergyStored());
+        assertEquals(0, buffer.spendInternal(5));
+    }
     @Test public void invalidAmountsDoNotChangeEnergy() {
         EnergyBuffer buffer = new EnergyBuffer(100, 10, 10);
         assertEquals(0, buffer.receiveEnergy(-1, false));

@@ -123,7 +123,7 @@ final class TileElectricFurnace extends AbstractEnergyTile implements ITickable 
     @Override public void update() {
         if (world == null || world.isRemote) return;
         EnergyTransfer.pull(this, energy, 512);
-        if (canSmelt() && energy.extractEnergy(10, false) == 10) {
+        if (canSmelt() && energy.spendInternal(10) == 10) {
             cookTime++;
             if (cookTime >= 200) {
                 smeltOne();
@@ -221,7 +221,7 @@ final class TileElectricAnvil extends AbstractEnergyTile implements ITickable {
                     REPAIR_PER_TICK, ENERGY_PER_DURABILITY);
             if (points > 0) {
                 int cost = RepairMath.energyCost(points, ENERGY_PER_DURABILITY);
-                if (energy.extractEnergy(cost, false) == cost) {
+                if (energy.spendInternal(cost) == cost) {
                     ItemStack repaired = item.copy();
                     repaired.setItemDamage(Math.max(0, repaired.getItemDamage() - points));
                     inventory.setStackInSlot(0, repaired);
