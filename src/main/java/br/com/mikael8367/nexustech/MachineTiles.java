@@ -1,6 +1,13 @@
 package br.com.mikael8367.nexustech;
+import java.util.ArrayList;
+import java.util.List;
+
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.FurnaceRecipes;
 import net.minecraft.nbt.NBTTagCompound;
@@ -8,7 +15,9 @@ import net.minecraft.util.ITickable;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraftforge.items.CapabilityItemHandler;
+import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemStackHandler;
+import net.minecraftforge.oredict.OreDictionary;
 
 final class TileCoalGenerator extends AbstractEnergyTile implements ITickable {
     private static final int MAX_FUEL_TICKS = 32000;
@@ -253,5 +262,246 @@ final class TileElectricAnvil extends AbstractEnergyTile implements ITickable {
     @Override public void readFromNBT(NBTTagCompound tag) {
         super.readFromNBT(tag);
         if (tag.hasKey("Inventory")) inventory.deserializeNBT(tag.getCompoundTag("Inventory"));
+    }
+}
+
+/**
+ * Pure geometry and arithmetic for the Digital Mine. Keeps the 3x2x3 contract
+ * in one place and stays unit-testable without a Minecraft runtime.
+ */
+final class MineMath {
+    static final int MINE_WIDTH = 3;
+    static final int MINE_HEIGHT = 2;
+    static final int MINE_DEPTH = 3;
+    static final int VOLUME = MINE_WIDTH * MINE_HEIGHT * MINE_DEPTH;
+    private MineMath() { }
+    /** Scan index to {dx, dy, dz} offsets relative to the machine; the layer just below it comes first. */
+    static int[] offsets(int index) {
+        if (index < 0 || index >= VOLUME) throw new IndexOutOfBoundsException("Scan index out of range: " + index);
+        int layerSize = MINE_WIDTH * MINE_DEPTH;
+        int dy = -(index / layerSize) - 1;
+        int rest = index % layerSize;
+        int dz = rest / MINE_WIDTH - 1;
+        int dx = rest % MINE_WIDTH - 1;
+        return new int[] {dx, dy, dz};
+    }
+    static int clampCursor(int stored) { return Math.max(0, Math.min(VOLUME, stored)); }
+    static long energyFor(int blocks, long costPerBlock) {
+        if (blocks <= 0 || costPerBlock <= 0L) return 0L;
+        long total = (long) blocks * costPerBlock;
+        return total < 0L ? Long.MAX_VALUE : total;
+    }
+}
+
+final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
+    private static final int ENERGY_PER_BLOCK = 50;
+    private static final int FILTER_LIMIT = 6;
+    private final ItemStackHandler filter = new ItemStackHandler(FILTER_LIMIT) {
+        @Override protected void onContentsChanged(int slot) { markDirty(); }
+    };
+    private final ItemStackHandler inventory = new ItemStackHandler(9) {
+        @Override protected void onContentsChanged(int slot) { markDirty(); }
+    };
+    /** External mods and pipes may only take mined items out; insertion is internal-only. */
+    private final IItemHandler outputView = new IItemHandler() {
+        @Override public int getSlots() { return inventory.getSlots(); }
+        @Override public ItemStack getStackInSlot(int slot) { return inventory.getStackInSlot(slot); }
+        @Override public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) { return stack; }
+        @Override public ItemStack extractItem(int slot, int amount, boolean simulate) { return inventory.extractItem(slot, amount, simulate); }
+        @Override public int getSlotLimit(int slot) { return inventory.getSlotLimit(slot); }
+        @Override public boolean isItemValid(int slot, ItemStack stack) { return false; }
+    };
+    private int cursor;
+    private boolean outputFull;
+
+    TileDigitalMine() { super(20000, 512, 0); }
+
+    static int mineVolume() { return MineMath.VOLUME; }
+    int getProgress() { return MineMath.clampCursor(cursor); }
+    boolean isFinished() { return MineMath.clampCursor(cursor) >= MineMath.VOLUME; }
+    boolean isOutputFull() { return outputFull; }
+    int getFilterCount() {
+        int count = 0;
+        for (int i = 0; i < filter.getSlots(); i++) if (!filter.getStackInSlot(i).isEmpty()) count++;
+        return count;
+    }
+    List<String> getFilterNames() {
+        List<String> names = new ArrayList<String>();
+        for (int i = 0; i < filter.getSlots(); i++) {
+            ItemStack entry = filter.getStackInSlot(i);
+            if (!entry.isEmpty()) names.add(entry.getDisplayName());
+        }
+        return names;
+    }
+    int getOutputCount() {
+        int count = 0;
+        for (int i = 0; i < inventory.getSlots(); i++) count += inventory.getStackInSlot(i).getCount();
+        return count;
+    }
+
+    /** Registers the held item type as a filter entry; the item itself is never consumed. */
+    boolean addToFilter(ItemStack stack) {
+        if (world == null || world.isRemote || stack == null || stack.isEmpty()) return false;
+        for (int i = 0; i < filter.getSlots(); i++) {
+            ItemStack entry = filter.getStackInSlot(i);
+            if (!entry.isEmpty() && ItemStack.areItemsEqual(entry, stack)) return false;
+        }
+        ItemStack one = stack.copy();
+        one.setCount(1);
+        for (int i = 0; i < filter.getSlots(); i++) {
+            if (filter.getStackInSlot(i).isEmpty()) {
+                filter.setStackInSlot(i, one);
+                markDirty(); syncClient();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    boolean clearFilter() {
+        if (getFilterCount() == 0) return false;
+        for (int i = 0; i < filter.getSlots(); i++) filter.setStackInSlot(i, ItemStack.EMPTY);
+        markDirty(); syncClient();
+        return true;
+    }
+
+    boolean takeOutput(EntityPlayer player) {
+        boolean taken = false;
+        for (int i = 0; i < inventory.getSlots(); i++) {
+            ItemStack output = inventory.extractItem(i, 64, false);
+            if (output.isEmpty()) continue;
+            taken = true;
+            if (!player.inventory.addItemStackToInventory(output) && !output.isEmpty()) player.dropItem(output, false);
+        }
+        return taken;
+    }
+
+    private static boolean isOre(ItemStack stack) {
+        for (int id : OreDictionary.getOreIDs(stack)) {
+            if (OreDictionary.getOreName(id).startsWith("ore")) return true;
+        }
+        return false;
+    }
+
+    private boolean matchesFilter(ItemStack stack) {
+        for (int i = 0; i < filter.getSlots(); i++) {
+            ItemStack entry = filter.getStackInSlot(i);
+            if (entry.isEmpty()) continue;
+            if (ItemStack.areItemsEqual(entry, stack)) return true;
+            if (sharesOreName(entry, stack)) return true;
+        }
+        return false;
+    }
+
+    private static boolean sharesOreName(ItemStack first, ItemStack second) {
+        for (int a : OreDictionary.getOreIDs(first)) {
+            if (!OreDictionary.getOreName(a).startsWith("ore")) continue;
+            for (int b : OreDictionary.getOreIDs(second)) {
+                if (a == b) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isTargetBlock(IBlockState state, BlockPos target) {
+        if (state.getBlock() == Blocks.BEDROCK) return false;
+        if (world.getTileEntity(target) != null) return false; // never break container or technical blocks
+        Item item = Item.getItemFromBlock(state.getBlock());
+        if (item == null || item == Items.AIR) return false;
+        ItemStack stack = new ItemStack(item, 1, state.getBlock().getMetaFromState(state));
+        if (getFilterCount() == 0) return isOre(stack);
+        return matchesFilter(stack);
+    }
+
+    private boolean canFitDrop(ItemStack drop) {
+        for (int i = 0; i < inventory.getSlots(); i++) {
+            if (inventory.insertItem(i, drop, true).isEmpty()) return true;
+        }
+        return false;
+    }
+
+    private void insertInternal(ItemStack drop) {
+        ItemStack remaining = drop;
+        for (int i = 0; i < inventory.getSlots() && !remaining.isEmpty(); i++) {
+            remaining = inventory.insertItem(i, remaining, false);
+        }
+        if (!remaining.isEmpty()) {
+            EntityItem entity = new EntityItem(world, pos.getX() + 0.5D, pos.getY() + 0.5D,
+                    pos.getZ() + 0.5D, remaining);
+            world.spawnEntity(entity);
+        }
+    }
+
+    @Override public void update() {
+        if (world == null || world.isRemote) return;
+        EnergyTransfer.pull(this, energy, 512);
+        boolean changed = false;
+        if (!isFinished() && energy.getEnergyStored() >= ENERGY_PER_BLOCK) {
+            BlockPos target = null;
+            IBlockState targetState = null;
+            while (cursor < MineMath.VOLUME) {
+                int[] offset = MineMath.offsets(cursor);
+                cursor++;
+                BlockPos candidate = pos.add(offset[0], offset[1], offset[2]);
+                IBlockState state = world.getBlockState(candidate);
+                if (isTargetBlock(state, candidate)) { target = candidate; targetState = state; break; }
+            }
+            if (target != null) {
+                List<ItemStack> drops = targetState.getBlock().getDrops(world, target, targetState, 0);
+                boolean fits = true;
+                for (ItemStack drop : drops) {
+                    if (drop == null || drop.isEmpty() || !canFitDrop(drop)) { fits = false; break; }
+                }
+                if (fits) {
+                    for (ItemStack drop : drops) if (drop != null && !drop.isEmpty()) insertInternal(drop);
+                    world.setBlockToAir(target);
+                    energy.spendInternal(ENERGY_PER_BLOCK);
+                    outputFull = false;
+                    changed = true;
+                } else {
+                    cursor = MineMath.clampCursor(cursor - 1); // wait for room instead of losing drops
+                    outputFull = true;
+                }
+            } else {
+                outputFull = false;
+                changed = true;
+            }
+        }
+        if (changed || world.getTotalWorldTime() % 10L == 0L) { markDirty(); syncClient(); }
+    }
+
+    void dropContents() {
+        if (world == null || world.isRemote) return;
+        for (int i = 0; i < inventory.getSlots(); i++) {
+            ItemStack stack = inventory.getStackInSlot(i).copy();
+            if (!stack.isEmpty()) {
+                EntityItem entity = new EntityItem(world, pos.getX() + 0.5D, pos.getY() + 0.5D,
+                        pos.getZ() + 0.5D, stack);
+                if (world.spawnEntity(entity)) inventory.setStackInSlot(i, ItemStack.EMPTY);
+            }
+        }
+    }
+
+    @Override public boolean hasCapability(net.minecraftforge.common.capabilities.Capability<?> cap, net.minecraft.util.EnumFacing side) {
+        return cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY || super.hasCapability(cap, side);
+    }
+    @Override @SuppressWarnings("unchecked")
+    public <T> T getCapability(net.minecraftforge.common.capabilities.Capability<T> cap, net.minecraft.util.EnumFacing side) {
+        return cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY ? (T) outputView : super.getCapability(cap, side);
+    }
+
+    @Override public NBTTagCompound writeToNBT(NBTTagCompound tag) {
+        tag.setTag("Filter", filter.serializeNBT());
+        tag.setTag("Inventory", inventory.serializeNBT());
+        tag.setInteger("MineCursor", cursor);
+        tag.setBoolean("MineOutputFull", outputFull);
+        return super.writeToNBT(tag);
+    }
+    @Override public void readFromNBT(NBTTagCompound tag) {
+        super.readFromNBT(tag);
+        if (tag.hasKey("Filter")) filter.deserializeNBT(tag.getCompoundTag("Filter"));
+        if (tag.hasKey("Inventory")) inventory.deserializeNBT(tag.getCompoundTag("Inventory"));
+        cursor = MineMath.clampCursor(tag.getInteger("MineCursor"));
+        outputFull = tag.getBoolean("MineOutputFull");
     }
 }

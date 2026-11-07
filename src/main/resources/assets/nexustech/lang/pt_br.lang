@@ -3,11 +3,13 @@ tile.nexustech.solar_panel.name=Painel Solar
 tile.nexustech.energy_cable.name=Cabo de Energia
 tile.nexustech.electric_furnace.name=Forno Elétrico
 tile.nexustech.electric_anvil.name=Bigorna Elétrica
+tile.nexustech.digital_mine.name=Mina Digital
 item.nexustech.coal_generator.name=Gerador a Carvão
 item.nexustech.solar_panel.name=Painel Solar
 item.nexustech.energy_cable.name=Cabo de Energia
 item.nexustech.electric_furnace.name=Forno Elétrico
 item.nexustech.electric_anvil.name=Bigorna Elétrica
+item.nexustech.digital_mine.name=Mina Digital
 itemGroup.nexustech=Nexus Tech
 
 # Compatibilidade com translation keys antigos que usavam ':' do ResourceLocation
@@ -16,8 +18,10 @@ tile.nexustech:solar_panel.name=Painel Solar
 tile.nexustech:energy_cable.name=Cabo de Energia
 tile.nexustech:electric_furnace.name=Forno Elétrico
 tile.nexustech:electric_anvil.name=Bigorna Elétrica
+tile.nexustech:digital_mine.name=Mina Digital
 item.nexustech:coal_generator.name=Gerador a Carvão
 item.nexustech:solar_panel.name=Painel Solar
 item.nexustech:energy_cable.name=Cabo de Energia
 item.nexustech:electric_furnace.name=Forno Elétrico
 item.nexustech:electric_anvil.name=Bigorna Elétrica
+item.nexustech:digital_mine.name=Mina Digital

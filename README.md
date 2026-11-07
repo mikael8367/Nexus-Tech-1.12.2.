@@ -15,8 +15,10 @@ Novo mod Forge independente dentro do JAR do projeto, com:
 - Cabos de energia com capability Forge Energy.
 - Forno elétrico para receitas da fornalha vanilla.
 - Bigorna elétrica que repara itens danificáveis usando o sistema padrão de durabilidade, inclusive ferramentas e armaduras de outros mods que usem esse padrão.
+- Mina Digital que escava uma área 3x2x3 abaixo dela e deixa você escolher quais minérios ou itens coletar.
 
 Veja [docs/POWER_SYSTEM.md](docs/POWER_SYSTEM.md) para especificações, operação e checklist de testes.
+Veja [docs/DIGITAL_MINE.md](docs/DIGITAL_MINE.md) para especificações, operação e checklist de testes da Mina Digital.
 
 ### ProjectE Storage Bridge
 Integra o ProjectE ao Simple Storage Network por meio de um cabo de armazenamento virtual que utiliza conhecimento e EMC do jogador.

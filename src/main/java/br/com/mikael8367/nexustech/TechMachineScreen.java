@@ -1,5 +1,7 @@
 package br.com.mikael8367.nexustech;
 
+import java.util.List;
+
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.text.TextFormatting;
@@ -57,6 +59,23 @@ public final class TechMachineScreen extends GuiScreen {
             drawString(fontRenderer, "Reparo: 4 pontos/tick, custo 25 FE/ponto", left + 12, y, 0xAABBC8);
             y += 15;
             drawString(fontRenderer, "Agache e clique para retirar o item.", left + 12, y, 0xAABBC8);
+        } else if (tile instanceof TileDigitalMine) {
+            TileDigitalMine mine = (TileDigitalMine) tile;
+            String status = mine.isOutputFull() ? "Saída cheia: retire os itens para continuar"
+                    : mine.isFinished() ? "Escavação concluída (3x2x3)"
+                    : "Progresso: " + mine.getProgress() + " / " + TileDigitalMine.mineVolume() + " (3x2x3)";
+            drawString(fontRenderer, status, left + 12, y, 0xE5E5E5);
+            y += 15;
+            List<String> filterNames = mine.getFilterNames();
+            List<String> shown = filterNames.size() > 3 ? filterNames.subList(0, 3) : filterNames;
+            String filter = filterNames.isEmpty() ? "Filtro: vazio (qualquer minério)"
+                    : "Filtro: " + String.join(", ", shown)
+                    + (filterNames.size() > 3 ? " +" + (filterNames.size() - 3) : "");
+            drawString(fontRenderer, filter, left + 12, y, 0xAABBC8);
+            y += 15;
+            drawString(fontRenderer, "Clique com um minério/item na mão para filtrar.", left + 12, y, 0xAABBC8);
+            y += 15;
+            drawString(fontRenderer, "Mão vazia agachando: retirar itens ou limpar filtro.", left + 12, y, 0xAABBC8);
         }
         drawCenteredString(fontRenderer, "ESC para fechar", width / 2, top + panelHeight - 14, 0x8899AA);
         super.drawScreen(mouseX, mouseY, partialTicks);

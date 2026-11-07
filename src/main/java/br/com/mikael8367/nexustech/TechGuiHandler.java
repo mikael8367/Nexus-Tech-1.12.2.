@@ -18,6 +18,7 @@ public final class TechGuiHandler implements IGuiHandler {
     public static final int GUI_CABLE = 2;
     public static final int GUI_FURNACE = 3;
     public static final int GUI_ANVIL = 4;
+    public static final int GUI_DIGITAL_MINE = 5;
 
     @Override
     public Object getServerGuiElement(int id, EntityPlayer player, World world, int x, int y, int z) {
@@ -41,6 +42,7 @@ public final class TechGuiHandler implements IGuiHandler {
             case GUI_CABLE: return tile instanceof TileEnergyCable;
             case GUI_FURNACE: return tile instanceof TileElectricFurnace;
             case GUI_ANVIL: return tile instanceof TileElectricAnvil;
+            case GUI_DIGITAL_MINE: return tile instanceof TileDigitalMine;
             default: return false;
         }
     }
@@ -52,6 +54,7 @@ public final class TechGuiHandler implements IGuiHandler {
             case GUI_CABLE: return "Cabo de energia";
             case GUI_FURNACE: return "Forno elétrico";
             case GUI_ANVIL: return "Bigorna elétrica";
+            case GUI_DIGITAL_MINE: return "Mina Digital";
             default: return "Nexus Tech";
         }
     }

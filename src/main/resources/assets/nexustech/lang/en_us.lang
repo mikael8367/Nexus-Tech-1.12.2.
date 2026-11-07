@@ -9,3 +9,5 @@ item.nexustech.energy_cable.name=Energy Cable
 item.nexustech.electric_furnace.name=Electric Furnace
 item.nexustech.electric_anvil.name=Electric Anvil
 itemGroup.nexustech=Nexus Tech
+tile.nexustech.digital_mine.name=Digital Mine
+item.nexustech.digital_mine.name=Digital Mine
