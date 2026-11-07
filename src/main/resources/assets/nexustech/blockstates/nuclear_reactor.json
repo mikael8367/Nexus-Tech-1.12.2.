@@ -1,10 +1,9 @@
 {
   "variants": {
-    "active=false": {
-      "model": "nexustech:nuclear_reactor"
-    },
-    "active=true": {
-      "model": "nexustech:nuclear_reactor_on"
-    }
+    "active=false,formed=false": { "model": "nexustech:nuclear_reactor" },
+    "active=true,formed=false": { "model": "nexustech:nuclear_reactor_on" },
+    "active=false,formed=true": { "model": "nexustech:nuclear_reactor_complete" },
+    "active=true,formed=true": { "model": "nexustech:nuclear_reactor_complete_on" },
+    "inventory": { "model": "nexustech:nuclear_reactor" }
   }
 }

@@ -1,8 +1,11 @@
 package br.com.mikael8367.nexustech;
 
+import java.io.IOException;
 import java.util.List;
 
 import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 
 /**
@@ -15,7 +18,7 @@ public final class TechMachineScreen extends GuiScreen {
     private static final int PANEL_WIDTH = 176;
     private static final int DEFAULT_PANEL_HEIGHT = 118;
     private static final int MINE_PANEL_HEIGHT = 148;
-    private static final int REACTOR_PANEL_HEIGHT = 170;
+    private static final int REACTOR_PANEL_HEIGHT = 194;
 
     private static final int BG = 0xFFC6C6C6;
     private static final int BEVEL_LIGHT = 0xFFFFFFFF;
@@ -143,9 +146,10 @@ public final class TechMachineScreen extends GuiScreen {
                         left + 8, y, TEXT_SOFT, false);
                 y += 12;
             }
+            drawReactorSlots(left, top, mouseX, mouseY);
             fontRenderer.drawString("Balde de água: +1000 mB.", left + 8, y, TEXT_SOFT, false);
             y += 12;
-            fontRenderer.drawString("Urânio na mão: abastece.", left + 8, y, TEXT_SOFT, false);
+            fontRenderer.drawString("Slots abaixo: urânio e água.", left + 8, y, TEXT_SOFT, false);
             y += 12;
             fontRenderer.drawString("Shift+clique: liga/desliga.", left + 8, y, TEXT_SOFT, false);
         } else if (tile instanceof TileDigitalMine) {
@@ -188,6 +192,56 @@ public final class TechMachineScreen extends GuiScreen {
         fontRenderer.drawString(esc, left + (PANEL_WIDTH - fontRenderer.getStringWidth(esc)) / 2,
                 top + panelHeight - 14, TEXT_SOFT, false);
         super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    /** Reactor GUI slots: uranium fuel on the left, water bucket on the right. */
+    private static final int SLOT_FUEL_X = 124;
+    private static final int SLOT_WATER_X = 146;
+    private static final int SLOT_Y = 156;
+
+    private void drawReactorSlots(int left, int top, int mouseX, int mouseY) {
+        drawSlotBox(left + SLOT_FUEL_X, top + SLOT_Y);
+        drawSlotBox(left + SLOT_WATER_X, top + SLOT_Y);
+        mc.getRenderItem().renderItemAndEffectIntoGUI(new ItemStack(TechResources.uraniumRod()),
+                left + SLOT_FUEL_X + 1, top + SLOT_Y + 1);
+        mc.getRenderItem().renderItemAndEffectIntoGUI(new ItemStack(Items.WATER_BUCKET),
+                left + SLOT_WATER_X + 1, top + SLOT_Y + 1);
+        drawSlotHover(mouseX, mouseY, left + SLOT_FUEL_X, top + SLOT_Y, "Urânio: barra ou lingote na mão");
+        drawSlotHover(mouseX, mouseY, left + SLOT_WATER_X, top + SLOT_Y, "Água: balde de água na mão");
+    }
+
+    private void drawSlotBox(int x, int y) {
+        drawRect(x - 1, y - 1, x + 17, y + 17, BEVEL_DARK);
+        drawRect(x, y, x + 16, y + 16, 0xFF8B8B8B);
+        drawRect(x, y, x + 16, y + 1, BEVEL_LIGHT);
+        drawRect(x, y, x + 1, y + 16, BEVEL_LIGHT);
+        drawRect(x, y + 15, x + 16, y + 16, BEVEL_DARK);
+        drawRect(x + 15, y, x + 16, y + 16, BEVEL_DARK);
+    }
+
+    private void drawSlotHover(int mouseX, int mouseY, int x, int y, String text) {
+        if (mouseX >= x - 1 && mouseX < x + 17 && mouseY >= y - 1 && mouseY < y + 17) {
+            drawRect(x, y, x + 16, y + 16, 0x80FFFFFF);
+            drawHoveringText(java.util.Collections.singletonList(text), mouseX, mouseY);
+        }
+    }
+
+    @Override protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+        if (tile instanceof TileNuclearReactor && mouseButton == 0) {
+            int left = (width - PANEL_WIDTH) / 2;
+            int top = (height - REACTOR_PANEL_HEIGHT) / 2;
+            if (mouseY >= top + SLOT_Y - 1 && mouseY < top + SLOT_Y + 17) {
+                if (mouseX >= left + SLOT_FUEL_X - 1 && mouseX < left + SLOT_FUEL_X + 17) {
+                    TechNetwork.CHANNEL.sendToServer(new TechNetwork.ReactorSlotMessage(tile.getPos(), 0));
+                    return;
+                }
+                if (mouseX >= left + SLOT_WATER_X - 1 && mouseX < left + SLOT_WATER_X + 17) {
+                    TechNetwork.CHANNEL.sendToServer(new TechNetwork.ReactorSlotMessage(tile.getPos(), 1));
+                    return;
+                }
+            }
+        }
+        super.mouseClicked(mouseX, mouseY, mouseButton);
     }
 
     /** Vanilla-style beveled gray panel with a black outline. */

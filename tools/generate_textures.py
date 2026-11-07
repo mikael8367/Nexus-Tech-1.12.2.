@@ -403,6 +403,7 @@ TEXTURES = {
     'digital_mine_front': digital_mine_front,
     'digital_mine_side': digital_mine_side,
     'digital_mine_top': digital_mine_top,
+    'digital_mine_front_complete': digital_mine_front_complete,
 }
 
 
@@ -640,9 +641,56 @@ def heat_sink(seed):
     return t
 
 
+def nuclear_reactor_front_complete(seed):
+    t = nuclear_reactor_front(seed)
+    # Assembled look: reinforced frame with a glowing uranium core window.
+    t.rect(5, 4, 26, 19, (24, 27, 31))
+    t.frame(5, 4, 26, 19, (96, 104, 112))
+    t.frame(6, 5, 25, 18, IRON_L)
+    t.rect(9, 8, 22, 16, (34, 88, 30))
+    t.rect(11, 10, 20, 14, (74, 152, 58))
+    t.rect(13, 11, 18, 13, (118, 208, 92))
+    t.set(15, 12, (190, 245, 170))
+    t.set(16, 12, (190, 245, 170))
+    for x in (9, 14, 19, 24):
+        t.rect(x, 6, x + 1, 7, (122, 132, 141))
+    return t
+
+
+def nuclear_reactor_front_complete_on(seed):
+    t = nuclear_reactor_front_complete(seed)
+    # Running: the core window glows hot and the indicator lights up.
+    t.rect(9, 8, 22, 16, (74, 178, 120))
+    t.rect(11, 10, 20, 14, (118, 224, 160))
+    t.rect(13, 11, 18, 13, (170, 245, 200))
+    t.rect(15, 12, 16, 12, (235, 255, 245))
+    t.rect(23, 6, 26, 9, (96, 200, 150))
+    t.rect(24, 7, 25, 8, (220, 255, 235))
+    return t
+
+
+def digital_mine_front_complete(seed):
+    t = digital_mine_front(seed)
+    # Assembled look: taller screen, scanning grid and drone lights.
+    t.rect(4, 4, 27, 21, (4, 34, 15))
+    t.frame(4, 4, 27, 21, (96, 104, 112))
+    t.rect(13, 7, 18, 9, (142, 240, 170))
+    t.rect(14, 10, 17, 11, (110, 232, 142))
+    t.rect(15, 12, 16, 13, (74, 222, 128))
+    t.hline(7, 24, 17, (22, 101, 52))
+    for (x, y) in ((7, 6), (22, 6), (7, 18), (22, 18)):
+        t.set(x, y, (210, 255, 225))
+    for i in range(8):
+        x = 5 + i * 3
+        t.rect(x, 20, x + 1, 20, (74, 222, 128) if i % 2 == 0 else (52, 211, 153))
+    return t
+
+
 REACTOR_TEXTURES = {
     'nuclear_reactor_front': nuclear_reactor_front,
     'nuclear_reactor_front_on': nuclear_reactor_front_on,
+    'nuclear_reactor_front_complete': nuclear_reactor_front_complete,
+    'nuclear_reactor_front_complete_on': nuclear_reactor_front_complete_on,
     'heat_sink': heat_sink,
     'nuclear_reactor_side': nuclear_reactor_side,
     'nuclear_reactor_top': nuclear_reactor_top,

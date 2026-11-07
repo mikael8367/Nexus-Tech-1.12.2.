@@ -21,6 +21,7 @@ public final class NexusTechMod {
         MinecraftForge.EVENT_BUS.register(new TechResourceRegistry());
         GameRegistry.registerWorldGenerator(new TechWorldGen(), 0);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new TechGuiHandler());
+        TechNetwork.register();
         event.getModLog().info("Nexus Tech machines, ores, ingots and Forge Energy network registered.");
     }
 }

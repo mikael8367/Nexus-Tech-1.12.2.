@@ -143,8 +143,22 @@ final class BlockElectricAnvil extends BlockTechMachine {
 }
 
 final class BlockDigitalMine extends BlockTechMachine {
+    /** Assembled multiblock look synced from the tile's structure check. */
+    static final net.minecraft.block.properties.PropertyBool FORMED =
+            net.minecraft.block.properties.PropertyBool.create("formed");
+
     BlockDigitalMine() { super("digital_mine", 3.5F); }
     @Override public TileEntity createNewTileEntity(World world, int meta) { return new TileDigitalMine(); }
+    @Override public net.minecraft.block.state.BlockStateContainer createBlockState() {
+        return new net.minecraft.block.state.BlockStateContainer(this, FORMED);
+    }
+    @Override public IBlockState getActualState(IBlockState state, IBlockAccess world, BlockPos pos) {
+        TileEntity tile = world.getTileEntity(pos);
+        if (tile instanceof TileDigitalMine && ((TileDigitalMine) tile).isStructureComplete()) {
+            return state.withProperty(FORMED, Boolean.TRUE);
+        }
+        return state;
+    }
     @Override public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player,
             EnumHand hand, net.minecraft.util.EnumFacing side, float hitX, float hitY, float hitZ) {
         if (hand != EnumHand.MAIN_HAND) return true;
@@ -179,12 +193,22 @@ final class BlockNuclearReactor extends BlockTechMachine {
     /** Lit block state synced with the tile's on/off switch. */
     static final net.minecraft.block.properties.PropertyBool ACTIVE =
             net.minecraft.block.properties.PropertyBool.create("active");
+    /** Assembled multiblock look synced from the tile's structure check. */
+    static final net.minecraft.block.properties.PropertyBool FORMED =
+            net.minecraft.block.properties.PropertyBool.create("formed");
 
     BlockNuclearReactor() { super("nuclear_reactor", 5.0F); }
     @Override public TileEntity createNewTileEntity(World world, int meta) { return new TileNuclearReactor(); }
 
     @Override public net.minecraft.block.state.BlockStateContainer createBlockState() {
-        return new net.minecraft.block.state.BlockStateContainer(this, ACTIVE);
+        return new net.minecraft.block.state.BlockStateContainer(this, ACTIVE, FORMED);
+    }
+    @Override public IBlockState getActualState(IBlockState state, IBlockAccess world, BlockPos pos) {
+        TileEntity tile = world.getTileEntity(pos);
+        if (tile instanceof TileNuclearReactor && ((TileNuclearReactor) tile).isStructureComplete()) {
+            return state.withProperty(FORMED, Boolean.TRUE);
+        }
+        return state;
     }
     @Override public IBlockState getStateFromMeta(int meta) {
         return getDefaultState().withProperty(ACTIVE, (meta & 1) == 1);

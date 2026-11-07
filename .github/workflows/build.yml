@@ -41,6 +41,9 @@ jobs:
           unzip -q gradle-4.9-bin.zip -d "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/gradle-4.9/bin" >> "$GITHUB_PATH"
 
+      - name: Generate textures
+        run: python3 tools/generate_textures.py
+
       - name: Build with Gradle
         run: |
           set -o pipefail

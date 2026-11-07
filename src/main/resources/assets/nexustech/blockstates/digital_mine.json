@@ -1,1 +1,7 @@
-{"variants":{"normal":{"model":"nexustech:digital_mine"}}}
+{
+  "variants": {
+    "formed=false": { "model": "nexustech:digital_mine" },
+    "formed=true": { "model": "nexustech:digital_mine_complete" },
+    "inventory": { "model": "nexustech:digital_mine" }
+  }
+}
