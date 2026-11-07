@@ -23,11 +23,11 @@ final class TechNetwork {
     }
 
     /** Slot 0 = uranium rod/ingot, slot 1 = water bucket; both use the item held in the main hand. */
-    static final class ReactorSlotMessage implements IMessage {
+    public static final class ReactorSlotMessage implements IMessage {
         private BlockPos pos;
         private int slot;
 
-        ReactorSlotMessage() {}
+        public ReactorSlotMessage() {}
         ReactorSlotMessage(BlockPos pos, int slot) { this.pos = pos; this.slot = slot; }
 
         @Override public void fromBytes(ByteBuf buf) {
@@ -39,7 +39,7 @@ final class TechNetwork {
             buf.writeByte(slot);
         }
 
-        static final class Handler implements IMessageHandler<ReactorSlotMessage, IMessage> {
+        public static final class Handler implements IMessageHandler<ReactorSlotMessage, IMessage> {
             @Override public IMessage onMessage(final ReactorSlotMessage message, final MessageContext ctx) {
                 final EntityPlayerMP player = ctx.getServerHandler().player;
                 player.getServerWorld().addScheduledTask(new Runnable() {
