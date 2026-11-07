@@ -1,7 +1,3 @@
-tile.projectestoragebridge.projecte_storage_cable.name=Cabo de Integração EMC
-item.projectestoragebridge.projecte_storage_cable.name=Cabo de Integração EMC
-itemGroup.projectestoragebridge=ProjectE Storage Bridge
-
-# Compatibilidade com translation key antigo baseado no ResourceLocation
-tile.projectestoragebridge:projecte_storage_cable.name=Cabo de Integração EMC
-item.projectestoragebridge:projecte_storage_cable.name=Cabo de Integração EMC
+itemGroup.projectestoragebridge=Ponte de Armazenamento ProjectE
+tile.projectestoragebridge.projecte_storage_cable.name=Cabo da Ponte de Armazenamento
+item.projectestoragebridge.projecte_storage_cable.name=Cabo da Ponte de Armazenamento

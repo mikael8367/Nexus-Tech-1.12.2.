@@ -91,11 +91,11 @@ abstract class AbstractEnergyTile extends TileEntity {
 
 final class EnergyTransfer {
     private EnergyTransfer() { }
-    static boolean push(TileEntity source, EnergyBuffer buffer, int limit) {
+    static int push(TileEntity source, EnergyBuffer buffer, int limit) {
         World world = source.getWorld();
-        if (world == null || world.isRemote || limit <= 0) return false;
-        int initial = buffer.getEnergyStored();
-        int budget = Math.min(limit, initial);
+        if (world == null || world.isRemote || limit <= 0) return 0;
+        int budget = Math.min(limit, buffer.getEnergyStored());
+        int moved = 0;
         BlockPos origin = source.getPos();
         for (EnumFacing side : EnumFacing.values()) {
             if (budget <= 0) break;
@@ -108,16 +108,18 @@ final class EnergyTransfer {
             int extracted = buffer.extractEnergy(simulated, false);
             int inserted = receiver.receiveEnergy(extracted, false);
             if (inserted < extracted) buffer.addInternal(extracted - inserted);
+            moved += inserted;
             budget -= inserted;
         }
-        return initial != buffer.getEnergyStored();
+        return moved;
     }
 
-    static boolean pull(TileEntity destination, EnergyBuffer buffer, int limit) {
+    static int pull(TileEntity destination, EnergyBuffer buffer, int limit) {
         World world = destination.getWorld();
-        if (world == null || world.isRemote || limit <= 0 || !buffer.canReceive()) return false;
+        if (world == null || world.isRemote || limit <= 0 || !buffer.canReceive()) return 0;
         int initial = buffer.getEnergyStored();
         int budget = Math.min(limit, buffer.getMaxEnergyStored() - initial);
+        int moved = 0;
         BlockPos origin = destination.getPos();
         for (EnumFacing side : EnumFacing.values()) {
             if (budget <= 0) break;
@@ -133,8 +135,9 @@ final class EnergyTransfer {
             int inserted = buffer.receiveEnergy(extracted, false);
             // Keep FE conserved if a third-party provider changes its response between simulation and commit.
             if (inserted < extracted) buffer.addInternal(extracted - inserted);
+            moved += inserted;
             budget -= inserted;
         }
-        return initial != buffer.getEnergyStored();
+        return moved;
     }
 }

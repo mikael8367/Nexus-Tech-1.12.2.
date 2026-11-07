@@ -167,9 +167,12 @@ final class TileNuclearReactor extends AbstractEnergyTile implements ITickable {
     }
 
     /** Inserts one uranium rod worth of fuel; only when the current rod is spent. */
-    boolean insertFuel() {
-        if (world == null || world.isRemote || fuelTicks > 0) return false;
-        fuelTicks = ReactorMath.ROD_TICKS;
+    boolean insertFuel() { return insertFuel(ReactorMath.ROD_TICKS); }
+
+    /** Inserts a custom amount of fuel ticks; an ingot is worth 25% of a rod. */
+    boolean insertFuel(int ticks) {
+        if (world == null || world.isRemote || fuelTicks > 0 || ticks <= 0) return false;
+        fuelTicks = Math.min(ReactorMath.ROD_TICKS, ticks);
         markDirty(); syncClient();
         return true;
     }
@@ -373,11 +376,25 @@ final class TileNuclearReactor extends AbstractEnergyTile implements ITickable {
     }
 
     @Override public boolean hasCapability(net.minecraftforge.common.capabilities.Capability<?> cap, net.minecraft.util.EnumFacing side) {
-        // Only the controller of the assembled structure is a network member.
         if (cap == net.minecraftforge.energy.CapabilityEnergy.ENERGY) {
+            // The whole assembled structure acts as one single energy provider,
+            // so cables touching any reactor block can extract FE.
+            if (!controllerTile && structureComplete) {
+                TileNuclearReactor controller = findController();
+                if (controller != null) return controller.hasCapability(cap, side);
+            }
             return controllerTile && super.hasCapability(cap, side);
         }
         return super.hasCapability(cap, side);
+    }
+
+    @Override @SuppressWarnings("unchecked")
+    public <T> T getCapability(net.minecraftforge.common.capabilities.Capability<T> cap, net.minecraft.util.EnumFacing side) {
+        if (cap == net.minecraftforge.energy.CapabilityEnergy.ENERGY && !controllerTile && structureComplete) {
+            TileNuclearReactor controller = findController();
+            if (controller != null && controller.controllerTile) return controller.getCapability(cap, side);
+        }
+        return super.getCapability(cap, side);
     }
 
     @Override public NBTTagCompound writeToNBT(NBTTagCompound tag) {

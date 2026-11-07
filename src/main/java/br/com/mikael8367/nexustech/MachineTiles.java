@@ -67,12 +67,26 @@ final class TileSolarPanel extends AbstractEnergyTile implements ITickable {
     }
 }
 final class TileEnergyCable extends AbstractEnergyTile implements ITickable {
+    private int inLastTick;
+    private int outLastTick;
     TileEnergyCable() { super(4000, 512, 512); }
+    int getInLastTick() { return inLastTick; }
+    int getOutLastTick() { return outLastTick; }
     @Override public void update() {
         if (world == null || world.isRemote) return;
-        EnergyTransfer.pull(this, energy, 512);
-        EnergyTransfer.push(this, energy, 512);
+        inLastTick = EnergyTransfer.pull(this, energy, 512);
+        outLastTick = EnergyTransfer.push(this, energy, 512);
         if (world.getTotalWorldTime() % 10L == 0L) { markDirty(); syncClient(); }
+    }
+    @Override public NBTTagCompound writeToNBT(NBTTagCompound tag) {
+        tag.setInteger("CableIn", inLastTick);
+        tag.setInteger("CableOut", outLastTick);
+        return super.writeToNBT(tag);
+    }
+    @Override public void readFromNBT(NBTTagCompound tag) {
+        super.readFromNBT(tag);
+        inLastTick = Math.max(0, tag.getInteger("CableIn"));
+        outLastTick = Math.max(0, tag.getInteger("CableOut"));
     }
 }
 
@@ -576,8 +590,16 @@ final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
     }
 
     @Override public boolean hasCapability(net.minecraftforge.common.capabilities.Capability<?> cap, net.minecraft.util.EnumFacing side) {
-        // Only the controller of the assembled 3x2x3 structure is a network member.
-        if (cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY || cap == net.minecraftforge.energy.CapabilityEnergy.ENERGY) {
+        if (cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY) {
+            return controllerTile && super.hasCapability(cap, side);
+        }
+        if (cap == net.minecraftforge.energy.CapabilityEnergy.ENERGY) {
+            // Every block of the assembled structure charges the controller,
+            // so cables touching any mine block can push FE in.
+            if (!controllerTile && structureComplete) {
+                TileDigitalMine controller = findController();
+                if (controller != null) return controller.hasCapability(cap, side);
+            }
             return controllerTile && super.hasCapability(cap, side);
         }
         return super.hasCapability(cap, side);
@@ -585,6 +607,10 @@ final class TileDigitalMine extends AbstractEnergyTile implements ITickable {
     @Override @SuppressWarnings("unchecked")
     public <T> T getCapability(net.minecraftforge.common.capabilities.Capability<T> cap, net.minecraft.util.EnumFacing side) {
         if (cap == CapabilityItemHandler.ITEM_HANDLER_CAPABILITY && controllerTile) return (T) outputView;
+        if (cap == net.minecraftforge.energy.CapabilityEnergy.ENERGY && !controllerTile && structureComplete) {
+            TileDigitalMine controller = findController();
+            if (controller != null && controller.controllerTile) return controller.getCapability(cap, side);
+        }
         return super.getCapability(cap, side);
     }
 

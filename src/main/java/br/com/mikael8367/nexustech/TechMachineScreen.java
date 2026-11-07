@@ -69,7 +69,10 @@ public final class TechMachineScreen extends GuiScreen {
             y += 12;
             fontRenderer.drawString("Céu aberto, sem chuva.", left + 8, y, TEXT_SOFT, false);
         } else if (tile instanceof TileEnergyCable) {
-            fontRenderer.drawString("Transferência: 512 FE/t", left + 8, y, TEXT, false);
+            TileEnergyCable cable = (TileEnergyCable) tile;
+            fontRenderer.drawString("Entrada: " + cable.getInLastTick() + " FE/t", left + 8, y, TEXT, false);
+            y += 12;
+            fontRenderer.drawString("Saída: " + cable.getOutLastTick() + " FE/t", left + 8, y, TEXT_SOFT, false);
             y += 12;
             fontRenderer.drawString("Conecte máquinas FE.", left + 8, y, TEXT_SOFT, false);
         } else if (tile instanceof TileElectricFurnace) {

@@ -203,7 +203,8 @@ final class BlockNuclearReactor extends BlockTechMachine {
         TileNuclearReactor reactor = (TileNuclearReactor) tile;
         // Any block of the assembled 3x5x3 structure acts on its controller.
         TileNuclearReactor controller = reactor.isController() ? reactor : reactor.findController();
-        if (controller == null) return openMachineGui(world, pos, player, TechGuiHandler.GUI_REACTOR);
+        // A partial structure still accepts fuel, water and the on/off toggle.
+        if (controller == null) controller = reactor;
         ItemStack held = player.getHeldItem(hand);
         if (player.isSneaking() && held.isEmpty()) {
             boolean on = controller.toggleRunning();
@@ -231,8 +232,18 @@ final class BlockNuclearReactor extends BlockTechMachine {
             }
             return true;
         }
-        if (!held.isEmpty() && held.getItem() == TechResources.uraniumRod()) {
-            if (controller.insertFuel() && !player.capabilities.isCreativeMode) held.shrink(1);
+        if (!held.isEmpty() && (held.getItem() == TechResources.uraniumRod()
+                || held.getItem() == TechResources.uraniumIngot())) {
+            boolean rod = held.getItem() == TechResources.uraniumRod();
+            if (controller.insertFuel(rod ? ReactorMath.ROD_TICKS : ReactorMath.ROD_TICKS / 4)) {
+                if (!player.capabilities.isCreativeMode) held.shrink(1);
+                player.sendStatusMessage(new net.minecraft.util.text.TextComponentString(rod
+                        ? "Barra de uranio inserida."
+                        : "Lingote de uranio inserido (25% de uma barra)."), true);
+            } else {
+                player.sendStatusMessage(new net.minecraft.util.text.TextComponentString(
+                        "O reator ja tem combustivel: gaste o atual antes de abastecer."), true);
+            }
             return true;
         }
         return openMachineGui(world, controller.getPos(), player, TechGuiHandler.GUI_REACTOR);

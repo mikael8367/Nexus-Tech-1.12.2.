@@ -38,6 +38,7 @@ final class TechResources {
     static Item ingot(int index) { return INGOT_ITEMS[index]; }
     static Item part(int index) { return PART_ITEMS[index]; }
     static Item uraniumRod() { return PART_ITEMS[0]; }
+    static Item uraniumIngot() { return INGOT_ITEMS[4]; }
     static void registerOreBlock(int index, Block block) { ORE_BLOCKS[index] = block; }
     static void registerIngotItem(int index, Item item) { INGOT_ITEMS[index] = item; }
     static void registerPartItem(int index, Item item) { PART_ITEMS[index] = item; }
