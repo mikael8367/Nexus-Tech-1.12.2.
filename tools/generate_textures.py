@@ -4,8 +4,8 @@
 
 Deterministic (seeded RNG per texture) so CI commits stay stable.
 Run from the repository root: python tools/generate_textures.py
-Writes machine and ore PNGs to src/main/resources/assets/nexustech/textures/blocks/
-and ingot PNGs to src/main/resources/assets/nexustech/textures/items/.
+Writes machine, ore and reactor PNGs to src/main/resources/assets/nexustech/textures/blocks/
+and ingot and part PNGs to src/main/resources/assets/nexustech/textures/items/.
 """
 import os
 import random
@@ -415,6 +415,7 @@ ORE_COLORS = {
     'tin': ((146, 158, 172), (198, 208, 218), (234, 240, 244)),
     'aluminum': ((160, 167, 173), (216, 222, 227), (247, 249, 251)),
     'lead': ((80, 94, 112), (128, 143, 162), (173, 187, 203)),
+    'uranium': ((30, 78, 30), (74, 152, 58), (118, 208, 92)),
 }
 
 INGOT_COLORS = {
@@ -422,9 +423,10 @@ INGOT_COLORS = {
     'tin': ((150, 164, 176), (205, 216, 225), (238, 244, 249), (92, 102, 113)),
     'aluminum': ((165, 172, 178), (222, 228, 233), (251, 253, 255), (98, 104, 110)),
     'lead': ((96, 110, 127), (144, 157, 172), (196, 206, 218), (46, 54, 64)),
+    'uranium': ((56, 118, 48), (96, 178, 74), (156, 226, 124), (22, 46, 20)),
 }
 
-METALS = ('copper', 'tin', 'aluminum', 'lead')
+METALS = ('copper', 'tin', 'aluminum', 'lead', 'uranium')
 
 
 def ore_base(t):
@@ -518,6 +520,111 @@ for metal in METALS:
     ITEM_TEXTURES[metal + '_ingot'] = (lambda m: lambda seed: ingot_texture(seed, m))(metal)
 
 
+YELLOW = (222, 168, 22)
+HAZARD_DARK = (32, 32, 32)
+URANIUM = (74, 152, 58)
+URANIUM_L = (118, 208, 92)
+URANIUM_D = (34, 88, 30)
+VENT_SLAT = (110, 118, 127)
+ROD_BODY = (105, 115, 126)
+ROD_LIGHT = (150, 160, 170)
+ROD_DARK = (70, 76, 84)
+
+
+def hazard_band(t, y0, y1):
+    for y in range(y0, y1 + 1):
+        for x in range(SIZE):
+            t.set(x, y, YELLOW if ((x + y) // 2) % 2 == 0 else HAZARD_DARK)
+
+
+def nuclear_reactor_front(seed):
+    t = Tex(seed)
+    machine_base(t)
+    t.rect(10, 11, 21, 20, IRON_D)
+    for y in (13, 15, 17, 19):
+        t.hline(11, 20, y, VENT_SLAT)
+    t.rect(23, 6, 26, 9, IRON_D)
+    t.rect(24, 7, 25, 8, URANIUM)
+    t.set(24, 7, URANIUM_L)
+    hazard_band(t, 24, 29)
+    t.rivet(2, 2)
+    t.rivet(28, 2)
+    t.rivet(2, 21)
+    t.rivet(28, 21)
+    return t
+
+
+def nuclear_reactor_side(seed):
+    t = Tex(seed)
+    machine_base(t)
+    for x in (7, 23):
+        t.rect(x, 5, x + 2, 21, IRON_D)
+        t.vline(x, 5, 21, IRON_L)
+        t.rect(x - 1, 5, x + 3, 5, IRON_D)
+        t.rect(x - 1, 21, x + 3, 21, IRON_D)
+    hazard_band(t, 24, 29)
+    t.rivet(2, 2)
+    t.rivet(28, 2)
+    t.rivet(2, 21)
+    t.rivet(28, 21)
+    return t
+
+
+def nuclear_reactor_top(seed):
+    t = Tex(seed)
+    machine_base(t)
+    for (vx, vy) in ((6, 6), (17, 6), (6, 17), (17, 17)):
+        t.rect(vx, vy, vx + 8, vy + 8, IRON_D)
+        for i in range(2, 8, 2):
+            t.hline(vx + 1, vx + 7, vy + i, VENT_SLAT)
+            t.vline(vx + i, vy + 1, vy + 7, VENT_SLAT)
+    return t
+
+
+def uranium_rod(seed):
+    t = Tex(seed, ITEM_SIZE)
+    t.fill((0, 0, 0, 0))
+    t.rect(6, 1, 9, 14, ROD_BODY)
+    t.vline(6, 1, 14, ROD_LIGHT)
+    t.rect(6, 1, 9, 2, ROD_DARK)
+    t.rect(6, 13, 9, 14, ROD_DARK)
+    for (y0, y1) in ((4, 5), (7, 8), (10, 11)):
+        t.rect(7, y0, 8, y1, URANIUM)
+        t.hline(7, 8, y0, URANIUM_L)
+        t.hline(7, 8, y1, URANIUM_D)
+    return t
+
+
+def reactor_casing(seed):
+    t = Tex(seed, ITEM_SIZE)
+    t.fill(IRON)
+    t.speckle((49, 54, 60), (67, 73, 81), 0.30)
+    t.border(IRON_D, 1)
+    t.rect(6, 4, 9, 7, IRON_D)
+    t.rect(7, 5, 8, 6, URANIUM)
+    t.set(7, 5, URANIUM_L)
+    for y in range(12, 14):
+        for x in range(ITEM_SIZE):
+            t.set(x, y, YELLOW if ((x + y) // 2) % 2 == 0 else HAZARD_DARK)
+    t.rivet(2, 2)
+    t.rivet(12, 2)
+    t.rivet(2, 12)
+    t.rivet(12, 12)
+    return t
+
+
+REACTOR_TEXTURES = {
+    'nuclear_reactor_front': nuclear_reactor_front,
+    'nuclear_reactor_side': nuclear_reactor_side,
+    'nuclear_reactor_top': nuclear_reactor_top,
+}
+
+PART_TEXTURES = {
+    'uranium_rod': uranium_rod,
+    'reactor_casing': reactor_casing,
+}
+
+
 def write_texture(directory, name, data):
     path = os.path.join(directory, name + '.png')
     with open(path, 'wb') as f:
@@ -534,6 +641,10 @@ def main():
         write_texture(OUT, name, png(paint(2000 + i).px))
     for i, (name, paint) in enumerate(sorted(ITEM_TEXTURES.items())):
         write_texture(OUT_ITEMS, name, png_item(paint(3000 + i).px))
+    for i, (name, paint) in enumerate(sorted(REACTOR_TEXTURES.items())):
+        write_texture(OUT, name, png(paint(4000 + i).px))
+    for i, (name, paint) in enumerate(sorted(PART_TEXTURES.items())):
+        write_texture(OUT_ITEMS, name, png_item(paint(5000 + i).px))
 
 
 if __name__ == '__main__':

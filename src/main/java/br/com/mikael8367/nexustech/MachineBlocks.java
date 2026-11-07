@@ -175,6 +175,34 @@ final class BlockDigitalMine extends BlockTechMachine {
     }
 }
 
+final class BlockNuclearReactor extends BlockTechMachine {
+    BlockNuclearReactor() { super("nuclear_reactor", 5.0F); }
+    @Override public TileEntity createNewTileEntity(World world, int meta) { return new TileNuclearReactor(); }
+    @Override public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player,
+            EnumHand hand, net.minecraft.util.EnumFacing side, float hitX, float hitY, float hitZ) {
+        if (hand != EnumHand.MAIN_HAND) return true;
+        TileEntity tile = world.getTileEntity(pos);
+        if (!(tile instanceof TileNuclearReactor)) return false;
+        if (world.isRemote) return true;
+        TileNuclearReactor reactor = (TileNuclearReactor) tile;
+        // Any block of the assembled 3x5x3 structure acts on its controller.
+        TileNuclearReactor controller = reactor.isController() ? reactor : reactor.findController();
+        if (controller == null) return openMachineGui(world, pos, player, TechGuiHandler.GUI_REACTOR);
+        ItemStack held = player.getHeldItem(hand);
+        if (!held.isEmpty() && held.getItem() == Items.WATER_BUCKET) {
+            if (controller.addWater(1000) > 0 && !player.capabilities.isCreativeMode) {
+                player.setHeldItem(hand, new ItemStack(Items.BUCKET));
+            }
+            return true;
+        }
+        if (!held.isEmpty() && held.getItem() == TechResources.uraniumRod()) {
+            if (controller.insertFuel() && !player.capabilities.isCreativeMode) held.shrink(1);
+            return true;
+        }
+        return openMachineGui(world, controller.getPos(), player, TechGuiHandler.GUI_REACTOR);
+    }
+}
+
 final class TechRegistry {
     static BlockCoalGenerator COAL_GENERATOR;
     static BlockSolarPanel SOLAR_PANEL;
@@ -182,6 +210,7 @@ final class TechRegistry {
     static BlockElectricFurnace ELECTRIC_FURNACE;
     static BlockElectricAnvil ELECTRIC_ANVIL;
     static BlockDigitalMine DIGITAL_MINE;
+    static BlockNuclearReactor NUCLEAR_REACTOR;
 
     @SubscribeEvent public void registerBlocks(RegistryEvent.Register<Block> event) {
         COAL_GENERATOR = new BlockCoalGenerator();
@@ -190,21 +219,24 @@ final class TechRegistry {
         ELECTRIC_FURNACE = new BlockElectricFurnace();
         ELECTRIC_ANVIL = new BlockElectricAnvil();
         DIGITAL_MINE = new BlockDigitalMine();
+        NUCLEAR_REACTOR = new BlockNuclearReactor();
         event.getRegistry().register(COAL_GENERATOR);
         event.getRegistry().register(SOLAR_PANEL);
         event.getRegistry().register(ENERGY_CABLE);
         event.getRegistry().register(ELECTRIC_FURNACE);
         event.getRegistry().register(ELECTRIC_ANVIL);
         event.getRegistry().register(DIGITAL_MINE);
+        event.getRegistry().register(NUCLEAR_REACTOR);
         GameRegistry.registerTileEntity(TileCoalGenerator.class, new net.minecraft.util.ResourceLocation(NexusTechMod.MOD_ID, "coal_generator"));
         GameRegistry.registerTileEntity(TileSolarPanel.class, new net.minecraft.util.ResourceLocation(NexusTechMod.MOD_ID, "solar_panel"));
         GameRegistry.registerTileEntity(TileEnergyCable.class, new net.minecraft.util.ResourceLocation(NexusTechMod.MOD_ID, "energy_cable"));
         GameRegistry.registerTileEntity(TileElectricFurnace.class, new net.minecraft.util.ResourceLocation(NexusTechMod.MOD_ID, "electric_furnace"));
         GameRegistry.registerTileEntity(TileElectricAnvil.class, new net.minecraft.util.ResourceLocation(NexusTechMod.MOD_ID, "electric_anvil"));
         GameRegistry.registerTileEntity(TileDigitalMine.class, new net.minecraft.util.ResourceLocation(NexusTechMod.MOD_ID, "digital_mine"));
+        GameRegistry.registerTileEntity(TileNuclearReactor.class, new net.minecraft.util.ResourceLocation(NexusTechMod.MOD_ID, "nuclear_reactor"));
     }
     @SubscribeEvent public void registerItems(RegistryEvent.Register<Item> event) {
-        Block[] blocks = {COAL_GENERATOR, SOLAR_PANEL, ENERGY_CABLE, ELECTRIC_FURNACE, ELECTRIC_ANVIL, DIGITAL_MINE};
+        Block[] blocks = {COAL_GENERATOR, SOLAR_PANEL, ENERGY_CABLE, ELECTRIC_FURNACE, ELECTRIC_ANVIL, DIGITAL_MINE, NUCLEAR_REACTOR};
         for (Block block : blocks) {
             if (block == null) throw new IllegalStateException("Block registration order invalid");
             event.getRegistry().register(new ItemBlock(block).setRegistryName(block.getRegistryName()));
@@ -214,6 +246,7 @@ final class TechRegistry {
     @SubscribeEvent public void registerModels(ModelRegistryEvent event) {
         registerModel(COAL_GENERATOR); registerModel(SOLAR_PANEL); registerModel(ENERGY_CABLE);
         registerModel(ELECTRIC_FURNACE); registerModel(ELECTRIC_ANVIL); registerModel(DIGITAL_MINE);
+        registerModel(NUCLEAR_REACTOR);
     }
     @SideOnly(Side.CLIENT)
     private static void registerModel(Block block) {

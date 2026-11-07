@@ -44,3 +44,16 @@ item.nexustech:copper_ingot.name=Lingote de Cobre
 item.nexustech:tin_ingot.name=Lingote de Estanho
 item.nexustech:aluminum_ingot.name=Lingote de Alumínio
 item.nexustech:lead_ingot.name=Lingote de Chumbo
+
+tile.nexustech.uranium_ore.name=Minério de Urânio
+tile.nexustech.nuclear_reactor.name=Reator Nuclear
+item.nexustech.uranium_ingot.name=Lingote de Urânio
+item.nexustech.uranium_rod.name=Barra de Urânio
+item.nexustech.reactor_casing.name=Revestimento do Reator
+
+# Compatibilidade com translation keys antigos que usavam ':' do ResourceLocation
+tile.nexustech:uranium_ore.name=Minério de Urânio
+tile.nexustech:nuclear_reactor.name=Reator Nuclear
+item.nexustech:uranium_ingot.name=Lingote de Urânio
+item.nexustech:uranium_rod.name=Barra de Urânio
+item.nexustech:reactor_casing.name=Revestimento do Reator

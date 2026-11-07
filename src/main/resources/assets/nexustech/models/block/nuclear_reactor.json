@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down": "nexustech:blocks/nuclear_reactor_side",
+    "up": "nexustech:blocks/nuclear_reactor_top",
+    "north": "nexustech:blocks/nuclear_reactor_front",
+    "south": "nexustech:blocks/nuclear_reactor_side",
+    "west": "nexustech:blocks/nuclear_reactor_side",
+    "east": "nexustech:blocks/nuclear_reactor_side",
+    "particle": "nexustech:blocks/nuclear_reactor_side"
+  }
+}

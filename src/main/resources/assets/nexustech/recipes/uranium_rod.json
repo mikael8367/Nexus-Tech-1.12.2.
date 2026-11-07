@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "LUL",
+    "UDU",
+    "LUL"
+  ],
+  "key": {
+    "L": {
+      "item": "nexustech:lead_ingot"
+    },
+    "U": {
+      "item": "nexustech:uranium_ingot"
+    },
+    "D": {
+      "item": "minecraft:diamond"
+    }
+  },
+  "result": {
+    "item": "nexustech:uranium_rod",
+    "count": 2
+  }
+}

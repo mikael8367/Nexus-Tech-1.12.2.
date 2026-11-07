@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CUC",
+    "UGU",
+    "CUC"
+  ],
+  "key": {
+    "C": {
+      "item": "nexustech:reactor_casing"
+    },
+    "U": {
+      "item": "nexustech:uranium_ingot"
+    },
+    "G": {
+      "item": "minecraft:gold_block"
+    }
+  },
+  "result": {
+    "item": "nexustech:nuclear_reactor",
+    "count": 45
+  }
+}
