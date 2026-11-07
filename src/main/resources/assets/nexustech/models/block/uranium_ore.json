@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "nexustech:blocks/uranium_ore"
+  }
+}

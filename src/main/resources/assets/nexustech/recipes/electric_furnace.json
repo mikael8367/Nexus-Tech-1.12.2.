@@ -1,1 +1,1 @@
-{"type":"minecraft:crafting_shaped","pattern":["III","IFI","RGR"],"key":{"I":{"item":"minecraft:iron_ingot"},"F":{"item":"minecraft:furnace"},"R":{"item":"minecraft:redstone"},"G":{"item":"minecraft:gold_ingot"}},"result":{"item":"nexustech:electric_furnace","count":1}}
+{"type":"minecraft:crafting_shaped","pattern":["ICI","IFI","RGR"],"key":{"I":{"item":"minecraft:iron_ingot"},"C":{"item":"nexustech:copper_ingot"},"F":{"item":"minecraft:furnace"},"R":{"item":"minecraft:redstone"},"G":{"item":"minecraft:gold_ingot"}},"result":{"item":"nexustech:electric_furnace","count":1}}

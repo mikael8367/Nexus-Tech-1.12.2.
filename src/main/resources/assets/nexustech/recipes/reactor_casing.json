@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ILI",
+    "LAL",
+    "ILI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "L": {
+      "item": "nexustech:lead_ingot"
+    },
+    "A": {
+      "item": "nexustech:aluminum_ingot"
+    }
+  },
+  "result": {
+    "item": "nexustech:reactor_casing",
+    "count": 1
+  }
+}

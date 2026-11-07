@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "active=false": {
+      "model": "nexustech:nuclear_reactor"
+    },
+    "active=true": {
+      "model": "nexustech:nuclear_reactor_on"
+    }
+  }
+}

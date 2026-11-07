@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AIA",
+    "ISI",
+    "AIA"
+  ],
+  "key": {
+    "A": {
+      "item": "nexustech:aluminum_ingot"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "S": {
+      "item": "minecraft:snow_block"
+    }
+  },
+  "result": {
+    "item": "nexustech:heat_sink",
+    "count": 4
+  }
+}
