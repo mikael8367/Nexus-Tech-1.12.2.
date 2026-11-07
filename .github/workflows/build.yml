@@ -7,6 +7,10 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: write
+  issues: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -49,15 +53,19 @@ jobs:
             echo "**Build falhou** - run ${{ github.run_number }} (commit ${{ github.sha }})"
             echo ""
             echo "```"
-            tail -n 120 gradle-build.log
+            tail -n 150 gradle-build.log 2>/dev/null || echo "(gradle nao chegou a rodar: sem log)"
             echo "```"
           } > /tmp/failure.md
           BODY="$(jq -Rs . /tmp/failure.md)"
-          curl -s -X POST \
+          HTTP_CODE=$(curl -s -o /tmp/resp.json -w "%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
             -d "{\"body\": $BODY}" \
-            "https://api.github.com/repos/mikael8367/Nexus-Tech-1.12.2/issues/4/comments" || echo "falha ao reportar"
+            "https://api.github.com/repos/mikael8367/Nexus-Tech-1.12.2/issues/4/comments")
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "reporte falhou com HTTP $HTTP_CODE"; cat /tmp/resp.json; exit 0
+          fi
+          echo "relatorio postado no issue #4"
 
       - name: Upload Build Artifact
         if: success()
