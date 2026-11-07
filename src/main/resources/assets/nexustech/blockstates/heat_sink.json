@@ -1,7 +1,1 @@
-{
-  "variants": {
-    "normal": {
-      "model": "nexustech:heat_sink"
-    }
-  }
-}
+{"variants":{"normal":{"model":"nexustech:heat_sink"},"inventory":{"model":"nexustech:item/heat_sink"}}}

@@ -1,7 +1,6 @@
 {
   "variants": {
-    "normal": {
-      "model": "projectestoragebridge:projecte_storage_cable"
-    }
+    "normal": { "model": "projectestoragebridge:projecte_storage_cable" },
+    "inventory": { "model": "projectestoragebridge:item/projecte_storage_cable" }
   }
 }
