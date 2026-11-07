@@ -301,6 +301,8 @@ final class MineMath {
     static int clampCursor(int stored) { return Math.max(0, Math.min(VOLUME, stored)); }
     static long energyFor(int blocks, long costPerBlock) {
         if (blocks <= 0 || costPerBlock <= 0L) return 0L;
+        // Saturate before multiplying: overflow can wrap around to a positive value.
+        if (costPerBlock > Long.MAX_VALUE / blocks) return Long.MAX_VALUE;
         long total = (long) blocks * costPerBlock;
         return total < 0L ? Long.MAX_VALUE : total;
     }
