@@ -403,7 +403,6 @@ TEXTURES = {
     'digital_mine_front': digital_mine_front,
     'digital_mine_side': digital_mine_side,
     'digital_mine_top': digital_mine_top,
-    'digital_mine_front_complete': digital_mine_front_complete,
 }
 
 
@@ -687,6 +686,7 @@ def digital_mine_front_complete(seed):
 
 
 REACTOR_TEXTURES = {
+    'digital_mine_front_complete': digital_mine_front_complete,
     'nuclear_reactor_front': nuclear_reactor_front,
     'nuclear_reactor_front_on': nuclear_reactor_front_on,
     'nuclear_reactor_front_complete': nuclear_reactor_front_complete,
