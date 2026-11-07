@@ -25,3 +25,22 @@ item.nexustech:energy_cable.name=Cabo de Energia
 item.nexustech:electric_furnace.name=Forno Elétrico
 item.nexustech:electric_anvil.name=Bigorna Elétrica
 item.nexustech:digital_mine.name=Mina Digital
+
+tile.nexustech.copper_ore.name=Minério de Cobre
+tile.nexustech.tin_ore.name=Minério de Estanho
+tile.nexustech.aluminum_ore.name=Minério de Alumínio
+tile.nexustech.lead_ore.name=Minério de Chumbo
+item.nexustech.copper_ingot.name=Lingote de Cobre
+item.nexustech.tin_ingot.name=Lingote de Estanho
+item.nexustech.aluminum_ingot.name=Lingote de Alumínio
+item.nexustech.lead_ingot.name=Lingote de Chumbo
+
+# Compatibilidade com translation keys antigos que usavam ':' do ResourceLocation
+tile.nexustech:copper_ore.name=Minério de Cobre
+tile.nexustech:tin_ore.name=Minério de Estanho
+tile.nexustech:aluminum_ore.name=Minério de Alumínio
+tile.nexustech:lead_ore.name=Minério de Chumbo
+item.nexustech:copper_ingot.name=Lingote de Cobre
+item.nexustech:tin_ingot.name=Lingote de Estanho
+item.nexustech:aluminum_ingot.name=Lingote de Alumínio
+item.nexustech:lead_ingot.name=Lingote de Chumbo

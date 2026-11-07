@@ -6,6 +6,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.registry.GameRegistry;
 
 @Mod(modid = NexusTechMod.MOD_ID, name = NexusTechMod.MOD_NAME, version = NexusTechMod.VERSION,
         dependencies = "required-after:forge@[14.23.5.2860,)")
@@ -17,8 +18,10 @@ public final class NexusTechMod {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(new TechRegistry());
+        MinecraftForge.EVENT_BUS.register(new TechResourceRegistry());
+        GameRegistry.registerWorldGenerator(new TechWorldGen(), 0);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new TechGuiHandler());
-        event.getModLog().info("Nexus Tech machines and Forge Energy network registered.");
+        event.getModLog().info("Nexus Tech machines, ores, ingots and Forge Energy network registered.");
     }
 }
 final class NexusTechCreativeTab extends CreativeTabs {

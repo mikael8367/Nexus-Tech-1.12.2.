@@ -13,6 +13,7 @@ Novo mod Forge independente dentro do JAR do projeto, com:
 - Gerador a carvão e carvão vegetal.
 - Painel solar de geração diurna.
 - Cabos de energia com capability Forge Energy.
+- Minérios próprios: cobre, estanho, alumínio e chumbo, com lingotes refinados, receitas das máquinas e geração de veios no mundo.
 - Forno elétrico para receitas da fornalha vanilla.
 - Bigorna elétrica que repara itens danificáveis usando o sistema padrão de durabilidade, inclusive ferramentas e armaduras de outros mods que usem esse padrão.
 - Mina Digital multibloco: monte a estrutura 3x2x3 com o próprio bloco e ela escava uma coluna 64x128x64 abaixo da estrutura, com filtro selecionável de minérios ou itens.

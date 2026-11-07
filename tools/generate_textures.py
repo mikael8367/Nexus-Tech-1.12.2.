@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Generates the detailed 32x32 machine textures for Nexus Tech Machines.
+"""Generates the detailed 32x32 machine and ore block textures plus the
+16x16 ingot item textures for Nexus Tech Machines.
 
 Deterministic (seeded RNG per texture) so CI commits stay stable.
 Run from the repository root: python tools/generate_textures.py
-Writes PNGs to src/main/resources/assets/nexustech/textures/blocks/.
+Writes machine and ore PNGs to src/main/resources/assets/nexustech/textures/blocks/
+and ingot PNGs to src/main/resources/assets/nexustech/textures/items/.
 """
 import os
 import random
@@ -11,8 +13,11 @@ import struct
 import zlib
 
 SIZE = 32
+ITEM_SIZE = 16
 OUT = os.path.join('src', 'main', 'resources', 'assets', 'nexustech',
                    'textures', 'blocks')
+OUT_ITEMS = os.path.join('src', 'main', 'resources', 'assets', 'nexustech',
+                         'textures', 'items')
 
 
 def chunk(tag, data):
@@ -20,34 +25,45 @@ def chunk(tag, data):
             struct.pack('>I', zlib.crc32(tag + data) & 0xffffffff))
 
 
-def png(pixels):
+def png_bytes(pixels, size, color_type):
     raw = bytearray()
     for row in pixels:
         raw.append(0)
         for p in row:
             raw.extend(bytes(p))
-    ihdr = struct.pack('>IIBBBBB', SIZE, SIZE, 8, 2, 0, 0, 0)
-    return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr) +
+    ihdr = struct.pack('>IIBBBBB', size, size, 8, color_type, 0, 0, 0)
+    return (b'PNG
+
+' + chunk(b'IHDR', ihdr) +
             chunk(b'IDAT', zlib.compress(bytes(raw), 9)) + chunk(b'IEND', b''))
 
 
+def png(pixels):
+    return png_bytes(pixels, SIZE, 2)
+
+
+def png_item(pixels):
+    return png_bytes(pixels, ITEM_SIZE, 6)
+
+
 class Tex(object):
-    def __init__(self, seed):
-        self.px = [[(0, 0, 0)] * SIZE for _ in range(SIZE)]
+    def __init__(self, seed, size=SIZE):
+        self.size = size
+        self.px = [[(0, 0, 0)] * size for _ in range(size)]
         self.rand = random.Random(seed)
 
     def set(self, x, y, c):
-        if 0 <= x < SIZE and 0 <= y < SIZE:
+        if 0 <= x < self.size and 0 <= y < self.size:
             self.px[y][x] = c
 
     def fill(self, c):
-        for y in range(SIZE):
-            for x in range(SIZE):
+        for y in range(self.size):
+            for x in range(self.size):
                 self.px[y][x] = c
 
     def speckle(self, dark, light, chance=0.30):
-        for y in range(SIZE):
-            for x in range(SIZE):
+        for y in range(self.size):
+            for x in range(self.size):
                 r = self.rand.random()
                 if r < chance * 0.5:
                     self.px[y][x] = dark
@@ -60,10 +76,10 @@ class Tex(object):
                 self.set(x, y, c)
 
     def border(self, c, t=1):
-        self.rect(0, 0, SIZE - 1, t - 1, c)
-        self.rect(0, SIZE - t, SIZE - 1, SIZE - 1, c)
-        self.rect(0, 0, t - 1, SIZE - 1, c)
-        self.rect(SIZE - t, 0, SIZE - 1, SIZE - 1, c)
+        self.rect(0, 0, self.size - 1, t - 1, c)
+        self.rect(0, self.size - t, self.size - 1, self.size - 1, c)
+        self.rect(0, 0, t - 1, self.size - 1, c)
+        self.rect(self.size - t, 0, self.size - 1, self.size - 1, c)
 
     def hline(self, x0, x1, y, c):
         for x in range(x0, x1 + 1):
@@ -85,9 +101,9 @@ class Tex(object):
 
     def corner_rivets(self):
         self.rivet(2, 2)
-        self.rivet(SIZE - 4, 2)
-        self.rivet(2, SIZE - 4)
-        self.rivet(SIZE - 4, SIZE - 4)
+        self.rivet(self.size - 4, 2)
+        self.rivet(2, self.size - 4)
+        self.rivet(self.size - 4, self.size - 4)
 
 
 IRON = (58, 63, 70)
@@ -392,14 +408,134 @@ TEXTURES = {
 }
 
 
+STONE = (125, 125, 125)
+STONE_D = (100, 100, 100)
+STONE_L = (143, 143, 143)
+
+ORE_COLORS = {
+    'copper': ((132, 76, 36), (186, 113, 52), (224, 158, 88)),
+    'tin': ((146, 158, 172), (198, 208, 218), (234, 240, 244)),
+    'aluminum': ((160, 167, 173), (216, 222, 227), (247, 249, 251)),
+    'lead': ((80, 94, 112), (128, 143, 162), (173, 187, 203)),
+}
+
+INGOT_COLORS = {
+    'copper': ((163, 95, 40), (214, 140, 60), (243, 192, 124), (70, 40, 18)),
+    'tin': ((150, 164, 176), (205, 216, 225), (238, 244, 249), (92, 102, 113)),
+    'aluminum': ((165, 172, 178), (222, 228, 233), (251, 253, 255), (98, 104, 110)),
+    'lead': ((96, 110, 127), (144, 157, 172), (196, 206, 218), (46, 54, 64)),
+}
+
+METALS = ('copper', 'tin', 'aluminum', 'lead')
+
+
+def ore_base(t):
+    t.fill(STONE)
+    t.speckle(STONE_D, STONE_L, 0.38)
+
+
+def ore_blob(t, x, y, dark, mid, light):
+    t.set(x + 1, y, light)
+    t.set(x + 2, y, light)
+    t.set(x, y + 1, light)
+    t.set(x + 1, y + 1, mid)
+    t.set(x + 2, y + 1, mid)
+    t.set(x, y + 2, mid)
+    t.set(x + 1, y + 2, mid)
+    t.set(x + 2, y + 2, dark)
+    t.set(x + 3, y + 2, dark)
+    t.set(x + 1, y + 3, mid)
+    t.set(x + 2, y + 3, dark)
+    t.set(x + 3, y + 3, dark)
+
+
+def ore_dot(t, x, y, dark, mid, light):
+    t.set(x, y, light)
+    t.set(x + 1, y, mid)
+    t.set(x, y + 1, mid)
+    t.set(x + 1, y + 1, dark)
+
+
+def ore_texture(seed, metal):
+    dark, mid, light = ORE_COLORS[metal]
+    t = Tex(seed)
+    ore_base(t)
+    for (x, y) in ((4, 3), (21, 5), (3, 18), (23, 21), (13, 12)):
+        ore_blob(t, x + t.rand.randint(-1, 1), y + t.rand.randint(-1, 1),
+                 dark, mid, light)
+    for (x, y) in ((9, 10), (17, 15), (8, 26), (19, 26), (28, 4), (15, 4)):
+        ore_dot(t, x + t.rand.randint(-1, 1), y + t.rand.randint(-1, 1),
+                dark, mid, light)
+    return t
+
+
+def rgba(c):
+    return (c[0], c[1], c[2], 255)
+
+
+def polyfill(t, pts, c):
+    n = len(pts)
+    for y in range(t.size):
+        for x in range(t.size):
+            px = x + 0.5
+            py = y + 0.5
+            inside = False
+            j = n - 1
+            for i in range(n):
+                xi, yi = pts[i]
+                xj, yj = pts[j]
+                if (yi > py) != (yj > py) and px < (xj - xi) * (py - yi) / (yj - yi) + xi:
+                    inside = not inside
+                j = i
+            if inside:
+                t.set(x, y, c)
+
+
+def ingot_texture(seed, metal):
+    dark, mid, light, outline = INGOT_COLORS[metal]
+    t = Tex(seed, ITEM_SIZE)
+    t.fill((0, 0, 0, 0))
+    polyfill(t, ((1, 6), (3, 9), (3, 13), (1, 10)), rgba(dark))
+    polyfill(t, ((3, 9), (13, 7), (13, 11), (3, 13)), rgba(mid))
+    polyfill(t, ((1, 6), (11, 4), (13, 7), (3, 9)), rgba(light))
+    for y in range(ITEM_SIZE):
+        for x in range(ITEM_SIZE):
+            if t.px[y][x][3] == 0:
+                continue
+            for (dx, dy) in ((1, 0), (0, 1)):
+                nx = x + dx
+                ny = y + dy
+                if nx >= ITEM_SIZE or ny >= ITEM_SIZE or t.px[ny][nx][3] == 0:
+                    t.px[y][x] = rgba(outline)
+                    break
+    t.set(3, 7, (255, 244, 230, 255))
+    t.set(4, 6, (255, 244, 230, 255))
+    return t
+
+
+ORE_TEXTURES = {}
+ITEM_TEXTURES = {}
+for metal in METALS:
+    ORE_TEXTURES[metal + '_ore'] = (lambda m: lambda seed: ore_texture(seed, m))(metal)
+    ITEM_TEXTURES[metal + '_ingot'] = (lambda m: lambda seed: ingot_texture(seed, m))(metal)
+
+
+def write_texture(directory, name, data):
+    path = os.path.join(directory, name + '.png')
+    with open(path, 'wb') as f:
+        f.write(data)
+    print('wrote ' + path)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
+    os.makedirs(OUT_ITEMS, exist_ok=True)
     for i, (name, paint) in enumerate(sorted(TEXTURES.items())):
-        t = paint(1000 + i)
-        path = os.path.join(OUT, name + '.png')
-        with open(path, 'wb') as f:
-            f.write(png(t.px))
-        print('wrote ' + path)
+        write_texture(OUT, name, png(paint(1000 + i).px))
+    for i, (name, paint) in enumerate(sorted(ORE_TEXTURES.items())):
+        write_texture(OUT, name, png(paint(2000 + i).px))
+    for i, (name, paint) in enumerate(sorted(ITEM_TEXTURES.items())):
+        write_texture(OUT_ITEMS, name, png_item(paint(3000 + i).px))
 
 
 if __name__ == '__main__':
