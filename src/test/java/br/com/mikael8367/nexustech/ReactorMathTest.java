@@ -3,7 +3,7 @@ package br.com.mikael8367.nexustech;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-/** Unit coverage for the pure reactor math: heat balance, meltdown timing and explosion scale. */
+/** Unit coverage for the pure reactor math: heat balance, cooling sources, meltdown timing and explosion scale. */
 public class ReactorMathTest {
     @Test public void clampsToValidRange() {
         assertEquals(0, ReactorMath.clamp(-5, ReactorMath.MAX_HEAT));
@@ -19,27 +19,46 @@ public class ReactorMathTest {
     }
 
     @Test public void burningWithoutCoolingHeatsUp() {
-        assertTrue(ReactorMath.heatDelta(true, false, false, 0) > 0);
-        assertTrue(ReactorMath.heatDelta(false, false, false, 0) < 0);
+        assertTrue(ReactorMath.heatDelta(true, false, false, 0, 0, 0, 0) > 0);
+        assertTrue(ReactorMath.heatDelta(false, false, false, 0, 0, 0, 0) < 0);
     }
 
     @Test public void waterCoolsABurningReactor() {
-        assertTrue(ReactorMath.heatDelta(true, false, true, 0) < 0);
+        assertTrue(ReactorMath.heatDelta(true, false, true, 0, 0, 0, 0) < 0);
     }
 
     @Test public void iceCoolingIsCapped() {
-        assertEquals(ReactorMath.heatDelta(false, false, false, 8),
-                ReactorMath.heatDelta(false, false, false, 64));
+        assertEquals(ReactorMath.heatDelta(false, false, false, 8, 0, 0, 0),
+                ReactorMath.heatDelta(false, false, false, 64, 0, 0, 0));
+    }
+
+    @Test public void snowCoolingIsCapped() {
+        assertEquals(ReactorMath.heatDelta(false, false, false, 0, 4, 0, 0),
+                ReactorMath.heatDelta(false, false, false, 0, 32, 0, 0));
+    }
+
+    @Test public void shellWaterCoolingIsCapped() {
+        assertEquals(ReactorMath.heatDelta(false, false, false, 0, 0, 6, 0),
+                ReactorMath.heatDelta(false, false, false, 0, 0, 60, 0));
+    }
+
+    @Test public void heatSinksCoolMorePerBlockAndAreCapped() {
+        int oneSink = ReactorMath.heatDelta(false, false, false, 0, 0, 0, 1);
+        int oneIce = ReactorMath.heatDelta(false, false, false, 1, 0, 0, 0);
+        assertTrue(oneSink < oneIce);
+        assertEquals(ReactorMath.heatDelta(false, false, false, 0, 0, 0, 12),
+                ReactorMath.heatDelta(false, false, false, 0, 0, 0, 40));
     }
 
     @Test public void meltdownHeatsUpEvenIdleAndIgnoresAmbientCooling() {
-        assertTrue(ReactorMath.heatDelta(false, true, false, 0) > 0);
-        assertTrue(ReactorMath.heatDelta(false, false, false, 0) < ReactorMath.heatDelta(false, true, false, 0));
+        assertTrue(ReactorMath.heatDelta(false, true, false, 0, 0, 0, 0) > 0);
+        assertTrue(ReactorMath.heatDelta(false, false, false, 0, 0, 0, 0)
+                < ReactorMath.heatDelta(false, true, false, 0, 0, 0, 0));
     }
 
     @Test public void activeCoolingCanBeatTheMeltdownRunaway() {
-        assertTrue(ReactorMath.heatDelta(false, true, true, 10) < 0);
-        assertTrue(ReactorMath.heatDelta(false, true, false, 16) < 0);
+        assertTrue(ReactorMath.heatDelta(false, true, true, 10, 8, 12, 8) < 0);
+        assertTrue(ReactorMath.heatDelta(false, true, false, 16, 8, 12, 8) < 0);
     }
 
     @Test public void meltdownTimingAndRescueThreshold() {
@@ -53,12 +72,30 @@ public class ReactorMathTest {
     }
 
     @Test public void iceMeltsOnlyWhenHotAndOnInterval() {
-        assertTrue(ReactorMath.iceMelts(ReactorMath.ICE_MELT_THRESHOLD, 60L));
-        assertFalse(ReactorMath.iceMelts(ReactorMath.ICE_MELT_THRESHOLD - 1, 60L));
-        assertFalse(ReactorMath.iceMelts(ReactorMath.ICE_MELT_THRESHOLD, 61L));
+        assertTrue(ReactorMath.iceMelts(ReactorMath.ICE_MELT_THRESHOLD, 60L, false));
+        assertFalse(ReactorMath.iceMelts(ReactorMath.ICE_MELT_THRESHOLD - 1, 60L, false));
+        assertFalse(ReactorMath.iceMelts(ReactorMath.ICE_MELT_THRESHOLD, 61L, false));
     }
 
-    @Test public void waterEvaporatesFasterDuringMeltdown() {
+    @Test public void iceAndSnowMeltFasterDuringMeltdown() {
+        assertTrue(ReactorMath.iceMelts(ReactorMath.MELTDOWN_CANCEL_HEAT, 20L, true));
+        assertFalse(ReactorMath.iceMelts(ReactorMath.MELTDOWN_CANCEL_HEAT - 1, 20L, true));
+        assertTrue(ReactorMath.snowMelts(ReactorMath.MELTDOWN_CANCEL_HEAT, 20L, true));
+        assertFalse(ReactorMath.snowMelts(ReactorMath.MELTDOWN_CANCEL_HEAT - 1, 20L, true));
+    }
+
+    @Test public void snowMeltsBeforeIce() {
+        assertTrue(ReactorMath.snowMelts(400, 60L, false));
+        assertFalse(ReactorMath.iceMelts(400, 60L, false));
+    }
+
+    @Test public void shellWaterEvaporatesOnlyInMeltdown() {
+        assertTrue(ReactorMath.shellWaterEvaporates(true, 20L));
+        assertFalse(ReactorMath.shellWaterEvaporates(true, 21L));
+        assertFalse(ReactorMath.shellWaterEvaporates(false, 20L));
+    }
+
+    @Test public void tankWaterEvaporatesFasterDuringMeltdown() {
         assertTrue(ReactorMath.waterUseMb(true) > ReactorMath.waterUseMb(false));
     }
 

@@ -24,3 +24,4 @@ tile.nexustech.nuclear_reactor.name=Nuclear Reactor
 item.nexustech.uranium_ingot.name=Uranium Ingot
 item.nexustech.uranium_rod.name=Uranium Rod
 item.nexustech.reactor_casing.name=Reactor Casing
+tile.nexustech.heat_sink.name=Heat Sink

@@ -15,7 +15,7 @@ public final class TechMachineScreen extends GuiScreen {
     private static final int PANEL_WIDTH = 176;
     private static final int DEFAULT_PANEL_HEIGHT = 118;
     private static final int MINE_PANEL_HEIGHT = 148;
-    private static final int REACTOR_PANEL_HEIGHT = 156;
+    private static final int REACTOR_PANEL_HEIGHT = 170;
 
     private static final int BG = 0xFFC6C6C6;
     private static final int BEVEL_LIGHT = 0xFFFFFFFF;
@@ -125,18 +125,26 @@ public final class TechMachineScreen extends GuiScreen {
                 } else if (hot) {
                     fontRenderer.drawString("Calor crítico: resfrie!", left + 8, y, STATUS_WARN, false);
                     y += 12;
+                } else if (!reactor.isRunning()) {
+                    fontRenderer.drawString("Reação desligada.", left + 8, y, TEXT_SOFT, false);
+                    y += 12;
                 } else {
                     fontRenderer.drawString("Reação " + (reactor.getFuelTicks() > 0 ? "estável" : "parada"),
                             left + 8, y, TEXT_SOFT, false);
                     y += 12;
                 }
-                fontRenderer.drawString("Gelo ao redor: -" + reactor.getIceCount() + " calor/t",
+                fontRenderer.drawString("Gelo -" + reactor.getIceCount() + " · Neve -" + reactor.getSnowCount()
+                        + " · Água -" + reactor.getShellWaterCount(), left + 8, y, TEXT_SOFT, false);
+                y += 12;
+                fontRenderer.drawString("Resfriadores: -" + reactor.getSinkCount() + " calor/t",
                         left + 8, y, TEXT_SOFT, false);
                 y += 12;
             }
             fontRenderer.drawString("Balde de água: +1000 mB.", left + 8, y, TEXT_SOFT, false);
             y += 12;
             fontRenderer.drawString("Urânio na mão: abastece.", left + 8, y, TEXT_SOFT, false);
+            y += 12;
+            fontRenderer.drawString("Shift+clique: liga/desliga.", left + 8, y, TEXT_SOFT, false);
         } else if (tile instanceof TileDigitalMine) {
             TileDigitalMine mine = (TileDigitalMine) tile;
             if (!mine.isStructureComplete()) {

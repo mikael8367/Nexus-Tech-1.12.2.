@@ -613,8 +613,37 @@ def reactor_casing(seed):
     return t
 
 
+def nuclear_reactor_front_on(seed):
+    t = nuclear_reactor_front(seed)
+    t.rect(23, 6, 26, 9, (96, 200, 150))
+    t.rect(24, 7, 25, 8, (150, 240, 190))
+    t.set(24, 7, (220, 255, 235))
+    t.set(25, 8, (118, 224, 160))
+    for (x, y) in ((12, 13), (16, 15), (14, 17), (18, 19)):
+        t.hline(x, x + 2, y, (150, 160, 170))
+    return t
+
+
+def heat_sink(seed):
+    t = Tex(seed)
+    machine_base(t)
+    for x in range(3, 29, 3):
+        t.rect(x, 5, x, 26, ROD_LIGHT)
+        t.vline(x, 5, 26, ROD_BODY)
+        t.rect(x + 1, 5, x + 1, 26, (48, 52, 58))
+    t.hline(3, 28, 4, IRON_D)
+    t.hline(3, 28, 27, IRON_D)
+    t.rivet(2, 2)
+    t.rivet(28, 2)
+    t.rivet(2, 28)
+    t.rivet(28, 28)
+    return t
+
+
 REACTOR_TEXTURES = {
     'nuclear_reactor_front': nuclear_reactor_front,
+    'nuclear_reactor_front_on': nuclear_reactor_front_on,
+    'heat_sink': heat_sink,
     'nuclear_reactor_side': nuclear_reactor_side,
     'nuclear_reactor_top': nuclear_reactor_top,
 }

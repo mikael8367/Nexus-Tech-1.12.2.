@@ -17,7 +17,8 @@ Novo mod Forge independente dentro do JAR do projeto, com:
 - Forno elétrico para receitas da fornalha vanilla.
 - Bigorna elétrica que repara itens danificáveis usando o sistema padrão de durabilidade, inclusive ferramentas e armaduras de outros mods que usem esse padrão.
 - Mina Digital multibloco: monte a estrutura 3x2x3 com o próprio bloco e ela escava uma coluna 64x128x64 abaixo da estrutura, com filtro selecionável de minérios ou itens.
-- Reator nuclear multibloco 3x5x3 movido a barras de urânio: gera muito FE, esfria com tanque de água e gelo ao redor, e entra em meltdown com alarme, contagem regressiva de 60 segundos e explosão de 100 TNTs se o calor máximo for atingido.
+- Reator nuclear multibloco 3x5x3 movido a barras de urânio: gera muito FE, liga e desliga com shift+clique (a estrutura inteira acende), tem modelo 3D com chaminé, tubos e medidor saliente, esfria com tanque de água, gelo, neve, água e Resfriadores Térmicos ao redor, e entra em meltdown com alarme, contagem regressiva de 60 segundos e explosão de 100 TNTs se o calor máximo for atingido.
+- Resfriador Térmico: bloco de dissipação permanente colocado na casca externa do reator, o resfriamento por bloco mais forte do mod (ferro, alumínio e bloco de neve na receita).
 
 Veja [docs/POWER_SYSTEM.md](docs/POWER_SYSTEM.md) para especificações, operação e checklist de testes.
 Veja [docs/DIGITAL_MINE.md](docs/DIGITAL_MINE.md) para especificações, operação e checklist de testes da Mina Digital.

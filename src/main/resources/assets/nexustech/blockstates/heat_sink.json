@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "normal": {
+      "model": "nexustech:heat_sink"
+    }
+  }
+}
